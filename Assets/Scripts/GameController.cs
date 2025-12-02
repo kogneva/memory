@@ -29,6 +29,7 @@ public class GameController : MonoBehaviour
     private int firstGuessIndex;
     private int secondGuessIndex;
     //TODO: wie viele guesses pro karte
+    public CardDefinition cardTest = new CardDefinition();
 
 
 
@@ -45,7 +46,8 @@ public class GameController : MonoBehaviour
         AddPictures();
         Shuffle(memoryCards);
         gameGuesses=memoryCards.Count/2;
-        
+        cardTest.Test();
+
     }
 
     void GetButtons()
