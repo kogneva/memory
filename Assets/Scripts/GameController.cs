@@ -13,41 +13,38 @@ public class GameController : MonoBehaviour
     [SerializeField]
     public int pair_of = 2;
 
-    public Sprite[] memoryPictures;
-    public Sprite[] shuffeledPictures;
+    //public Sprite[] memoryPictures;
+    //public Sprite[] shuffeledPictures;
 
-    public List<Sprite> memoryCards = new List<Sprite>();
-
-    public List<Button> btns = new List<Button>();
+    //public List<Sprite> memoryCards = new List<Sprite>();
+    //TODO: fotos aufrufen
+    public List<Card> cards = new List<Card>();
 
     private bool firstGuess, secondGuess;
     private string firstGuessCard, secondGuessCard;
-    private int countGuesses;
-    private int countCorrectGuesses;
-    private int countIncorrectGuesses;
+    //private int countGuesses;
+    //private int countCorrectGuesses;
+    //private int countIncorrectGuesses;
     private int gameGuesses;
     private int firstGuessIndex;
     private int secondGuessIndex;
-    //TODO: wie viele guesses pro karte
-    public CardDefinition cardTest = new CardDefinition();
-
+    //public Card card = new Card();
 
 
     private void Awake()
     {
-        memoryPictures = Resources.LoadAll<Sprite>("Sprites/diamond-pearl"); //path
+        //memoryPictures = Resources.LoadAll<Sprite>("Sprites/diamond-pearl"); //path
         //shuffeledPictures = ShuffleSprites(memoryPictures));//todo: cards need to be shuffeled
-
+        //TODO: initialize
     }
     void Start()
     {
         GetButtons();
         AddListeners();
-        AddPictures();
+        //AddPictures();
         Shuffle(memoryCards);
         gameGuesses=memoryCards.Count/2;
-        cardTest.Test();
-
+      
     }
 
     void GetButtons()
@@ -56,34 +53,38 @@ public class GameController : MonoBehaviour
         for (int i = 0; i < objects.Length; i++)
         {
             // add image for each button 
-            btns.Add(objects[i].GetComponent<Button>());
-            btns[i].image.sprite = backImage;
+            cards.Add(objects[i].GetComponent<Card>());
+            cards[i].image= backImage;
+            //btns[i].cardDefinition.image.sprite = backImage;
         }
     }
 
-    void AddListeners()
+    void AddListeners() //wird auch später für cardView gebraucht (OnButtonClick)
     {
-        foreach (Button btn in btns)
+        foreach (Card card in cards)
         {
-            btn.onClick.AddListener(() => PickCard());
+            card.OnClick();//TODO: pickcard aufrufen, button anbinden?
+                //OnClick(() => PickCard()); ;
+            //btn.onClick.AddListener(() => PickCard());
         }
     }
 
-    void AddPictures()
-    {
-        int index = 0;
-        for (int i = 0; i < btns.Count; i++)
-        {
-            if (index == btns.Count / pair_of)
-            {
-                index = 0;
-            }
+    //bilder sollten schon da sein??
+    //void AddPictures()
+    //{
+    //    int index = 0;
+    //    for (int i = 0; i < cards.Count; i++)
+    //    {
+    //        if (index == cards.Count / pair_of)
+    //        {
+    //            index = 0;
+    //        }
 
-            memoryCards.Add(memoryPictures[index]);
-            index++;
-        }
+    //        memoryCards.Add(memoryPictures[index]);
+    //        index++;
+    //    }
 
-    }
+    //}
 
     public void PickCard()
     {
@@ -98,8 +99,9 @@ public class GameController : MonoBehaviour
             firstGuessCard = memoryCards[firstGuessIndex].name;
             // setzt bild (also dreht karte um) 
             // todo: animation einbauen
-            btns[firstGuessIndex].image.sprite = memoryCards[firstGuessIndex];
-            btns[firstGuessIndex].interactable = false;
+            cards[firstGuessIndex].image = memoryCards[firstGuessIndex];
+            cards[firstGuessIndex].is_revealed=true;
+            //cards[firstGuessIndex].interactable = false;
 
         }
         else if (!secondGuess)
@@ -108,18 +110,21 @@ public class GameController : MonoBehaviour
             secondGuessIndex = int.Parse(name);
             secondGuessCard = memoryCards[secondGuessIndex].name;
             // setzt bild (also dreht karte um)
-            btns[secondGuessIndex].image.sprite = memoryCards[secondGuessIndex];
-            btns[secondGuessIndex].interactable = false;
-            countGuesses++; 
+            cards[secondGuessIndex].image= memoryCards[secondGuessIndex];
+            cards[firstGuessIndex].is_revealed = true;
+            //cards[secondGuessIndex].interactable = false;
+          
             StartCoroutine(CheckForMatch());
 
             if (firstGuessCard == secondGuessCard)
             {
                 Debug.Log("Found a match");
+                //cards[secondGuessIndex].CorrectGuesses++;//TODO:
             }
             else
             {
                 Debug.Log("Cards don't match");
+                //cards[secondGuessIndex].IncorrectGuesses++;//TODO:
             }
         }
     }
@@ -130,16 +135,16 @@ public class GameController : MonoBehaviour
         if (firstGuessCard == secondGuessCard)
         {
             yield return new WaitForSeconds (.5f);
-            btns[firstGuessIndex].interactable = false;
-            btns[secondGuessIndex].interactable =false;
-            btns[firstGuessIndex].image.color = new Color (0,0,0,0);
-            btns[secondGuessIndex].image.color = new Color(0, 0, 0, 0);
+            //cards[firstGuessIndex].interactable = false;
+            //cards[secondGuessIndex].interactable = false;
+            //cards[firstGuessIndex].image.color = new Color(0, 0, 0, 0); //TODO: karte ausblenden
+            //cards[secondGuessIndex].image.color = new Color(0, 0, 0, 0);
             if (pair_of > 2) {
-                foreach (var btn in btns)
+                foreach (var card in cards)
                 {
-                    Debug.Log("btn: " + btn + " bild des buttons: " + btn.image.name);
-                    Debug.Log("zu vergleichendes bild:" + btns[firstGuessIndex].image.name);
-                    if (btn.image.name == btns[firstGuessIndex].image.name)
+                    Debug.Log("btn: " + card + " bild des buttons: " + card.image.name);
+                    Debug.Log("zu vergleichendes bild:" + cards[firstGuessIndex].image.name);
+                    if (card.image.name == cards[firstGuessIndex].image.name)
                     //TODO: id einführen
                     {
                         Debug.Log("image matcht");
@@ -161,10 +166,10 @@ public class GameController : MonoBehaviour
         }
         else
         {
-            btns[firstGuessIndex].image.sprite = backImage;
-            btns[secondGuessIndex].image.sprite = backImage;
-            btns[firstGuessIndex].interactable = true; 
-            btns[secondGuessIndex].interactable = true;
+            //btns[firstGuessIndex].image.sprite = backImage;
+            //btns[secondGuessIndex].image.sprite = backImage;
+            //btns[firstGuessIndex].interactable = true; 
+            //btns[secondGuessIndex].interactable = true;
         }
         yield return new WaitForSeconds(.5f);
         firstGuess = secondGuess = false;
@@ -172,12 +177,12 @@ public class GameController : MonoBehaviour
 
     void CheckIfGameOver()
     {
-        countCorrectGuesses++;
-        if(countCorrectGuesses == gameGuesses)
-        {
-            Debug.Log("Game Over");
-            Debug.Log("guesses:" + countGuesses);
-        }
+        //countCorrectGuesses++;
+        //if(countCorrectGuesses == gameGuesses)
+        //{
+        //    Debug.Log("Game Over");
+        //    Debug.Log("guesses:" + countGuesses);
+        //}
     }
 
     void Shuffle(List<Sprite> list)
