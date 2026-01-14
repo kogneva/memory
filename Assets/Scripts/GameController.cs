@@ -1,222 +1,248 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.UI;
 
+/// <summary>
+/// Verwaltet das Memory-Spiel mit Decks, Gruppen und Karten
+/// </summary>
 public class GameController : MonoBehaviour
 {
+    public static GameController Instance { get; private set; }
 
     [SerializeField]
-    private Sprite backImage;
+    public Sprite backSprite;
 
     [SerializeField]
-    public int pair_of = 2;
+    private Sprite defaultBackImage;
 
-    //public Sprite[] memoryPictures;
-    //public Sprite[] shuffeledPictures;
-
-    //public List<Sprite> memoryCards = new List<Sprite>();
-    //TODO: fotos aufrufen
     public List<Card> cards = new List<Card>();
-
-    private bool firstGuess, secondGuess;
-    private string firstGuessCard, secondGuessCard;
-    //private int countGuesses;
-    //private int countCorrectGuesses;
-    //private int countIncorrectGuesses;
-    private int gameGuesses;
-    private int firstGuessIndex;
-    private int secondGuessIndex;
-    //public Card card = new Card();
-
+    
+    private ImageManager.MemoryDeck currentDeck;
+    private List<Card> revealedCards = new List<Card>();
+    private bool checkingMatch = false;
+    private int matchesFound = 0;
+    private int totalMatches = 0;
 
     private void Awake()
     {
-        //memoryPictures = Resources.LoadAll<Sprite>("Sprites/diamond-pearl"); //path
-        //shuffeledPictures = ShuffleSprites(memoryPictures));//todo: cards need to be shuffeled
-        //TODO: initialize
-    }
-    void Start()
-    {
-        GetButtons();
-        AddListeners();
-        //AddPictures();
-        Shuffle(memoryCards);
-        gameGuesses=memoryCards.Count/2;
-      
-    }
-
-    void GetButtons()
-    {
-        GameObject[] objects = GameObject.FindGameObjectsWithTag("MemoryCard");
-        for (int i = 0; i < objects.Length; i++)
+        if (Instance == null)
         {
-            // add image for each button 
-            cards.Add(objects[i].GetComponent<Card>());
-            cards[i].image= backImage;
-            //btns[i].cardDefinition.image.sprite = backImage;
-        }
-    }
-
-    void AddListeners() //wird auch später für cardView gebraucht (OnButtonClick)
-    {
-        foreach (Card card in cards)
-        {
-            card.OnClick();//TODO: pickcard aufrufen, button anbinden?
-                //OnClick(() => PickCard()); ;
-            //btn.onClick.AddListener(() => PickCard());
-        }
-    }
-
-    //bilder sollten schon da sein??
-    //void AddPictures()
-    //{
-    //    int index = 0;
-    //    for (int i = 0; i < cards.Count; i++)
-    //    {
-    //        if (index == cards.Count / pair_of)
-    //        {
-    //            index = 0;
-    //        }
-
-    //        memoryCards.Add(memoryPictures[index]);
-    //        index++;
-    //    }
-
-    //}
-
-    public void PickCard()
-    {
-        string name = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject.name;
-        Debug.Log("Button number " + name + " was clicked");
-
-        if (!firstGuess)
-        {
-            
-            firstGuess = true;
-            firstGuessIndex = int.Parse(name);
-            firstGuessCard = memoryCards[firstGuessIndex].name;
-            // setzt bild (also dreht karte um) 
-            // todo: animation einbauen
-            cards[firstGuessIndex].image = memoryCards[firstGuessIndex];
-            cards[firstGuessIndex].is_revealed=true;
-            //cards[firstGuessIndex].interactable = false;
-
-        }
-        else if (!secondGuess)
-        {
-            secondGuess = true;
-            secondGuessIndex = int.Parse(name);
-            secondGuessCard = memoryCards[secondGuessIndex].name;
-            // setzt bild (also dreht karte um)
-            cards[secondGuessIndex].image= memoryCards[secondGuessIndex];
-            cards[firstGuessIndex].is_revealed = true;
-            //cards[secondGuessIndex].interactable = false;
-          
-            StartCoroutine(CheckForMatch());
-
-            if (firstGuessCard == secondGuessCard)
-            {
-                Debug.Log("Found a match");
-                //cards[secondGuessIndex].CorrectGuesses++;//TODO:
-            }
-            else
-            {
-                Debug.Log("Cards don't match");
-                //cards[secondGuessIndex].IncorrectGuesses++;//TODO:
-            }
-        }
-    }
-
-    IEnumerator CheckForMatch()
-    {
-        yield return new WaitForSeconds(1f);
-        if (firstGuessCard == secondGuessCard)
-        {
-            yield return new WaitForSeconds (.5f);
-            //cards[firstGuessIndex].interactable = false;
-            //cards[secondGuessIndex].interactable = false;
-            //cards[firstGuessIndex].image.color = new Color(0, 0, 0, 0); //TODO: karte ausblenden
-            //cards[secondGuessIndex].image.color = new Color(0, 0, 0, 0);
-            if (pair_of > 2) {
-                foreach (var card in cards)
-                {
-                    Debug.Log("btn: " + card + " bild des buttons: " + card.image.name);
-                    Debug.Log("zu vergleichendes bild:" + cards[firstGuessIndex].image.name);
-                    if (card.image.name == cards[firstGuessIndex].image.name)
-                    //TODO: id einführen
-                    {
-                        Debug.Log("image matcht");
-                        //index: int index = employeeList.FindIndex(employee => employee.LastName.Equals(somename, StringComparison.Ordinal));
-                       //btns[indexOf(btn)] btn.interactable = false;
-                       // btn.image.color = new Color(0, 0, 0, 0);
-                        //btns[int.Parse(btn)].interactable = false;
-                        //btns[firstGuessIndex].image.color = new Color(0, 0, 0, 0);
-                    }
-                }
-                //find all cards with same image
-                //and set color to 0 and make uninteractable
-                //RemoveMatchingCards(btns, btns[firstGuessIndex].image.sprite);
-
-            }
-
-
-            CheckIfGameOver();
+            Instance = this;
         }
         else
         {
-            //btns[firstGuessIndex].image.sprite = backImage;
-            //btns[secondGuessIndex].image.sprite = backImage;
-            //btns[firstGuessIndex].interactable = true; 
-            //btns[secondGuessIndex].interactable = true;
+            Destroy(gameObject);
+            return;
         }
-        yield return new WaitForSeconds(.5f);
-        firstGuess = secondGuess = false;
+
+        backSprite = defaultBackImage;
     }
 
-    void CheckIfGameOver()
+    void Start()
     {
-        //countCorrectGuesses++;
-        //if(countCorrectGuesses == gameGuesses)
-        //{
-        //    Debug.Log("Game Over");
-        //    Debug.Log("guesses:" + countGuesses);
-        //}
+        GetCards();
     }
 
-    void Shuffle(List<Sprite> list)
+    /// <summary>
+    /// Sammelt alle Card-Komponenten aus dem Spielfeld
+    /// </summary>
+    void GetCards()
     {
-        for (int i = 0; i < list.Count; i++)
+        cards.Clear();
+        GameObject[] objects = GameObject.FindGameObjectsWithTag("MemoryCard");
+        foreach (GameObject obj in objects)
         {
-            Sprite temp = list[i];
-            int randomIndex = Random.Range(i, list.Count);
-            list[i] = list[randomIndex];
-            list[randomIndex] = temp;
+            Card card = obj.GetComponent<Card>();
+            if (card != null)
+            {
+                cards.Add(card);
+            }
         }
-
     }
 
-    //void RemoveMatchingCards(List<Button> btns, Sprite img)
-    //{
-    //    Debug.Log("in remove matching cards");
-    //    Debug.Log("übergebnes bild:"+img);
+    /// <summary>
+    /// Initialisiert das Spiel mit einem Deck
+    /// </summary>
+    public void InitializeGame(int deckId)
+    {
+        ImageManager imageManager = ImageManager.Instance;
+        currentDeck = imageManager.GetDeck(deckId);
 
+        if (currentDeck == null)
+        {
+            Debug.LogError($"Deck mit ID {deckId} nicht gefunden");
+            return;
+        }
 
-    //    foreach (var btn in btns)
-    //    {
-    //        Debug.Log("btn: "+btn+" bild des buttons: "+btn.image.sprite);
+        matchesFound = 0;
+        revealedCards.Clear();
+        checkingMatch = false;
 
-    //        if (btn.image.sprite == img)
-    //        {
-    //            Debug.Log("image matcht");
-    //            //index: int index = employeeList.FindIndex(employee => employee.LastName.Equals(somename, StringComparison.Ordinal));
-    //            btn.interactable = false;
-    //            btn.image.color = new Color(0, 0, 0, 0);
-    //            //btns[int.Parse(btn)].interactable = false;
-    //            //btns[firstGuessIndex].image.color = new Color(0, 0, 0, 0);
-    //        }
-    //    }
-    //}
+        // Verteile Bilder auf Karten
+        SetupCardImages();
+        CalculateTotalMatches();
+    }
+
+    /// <summary>
+    /// Berechnet die Gesamtzahl der Matches basierend auf dem aktuellen Deck
+    /// </summary>
+    void CalculateTotalMatches()
+    {
+        totalMatches = currentDeck.groups.Count;
+    }
+
+    /// <summary>
+    /// Verteilt die Bilder der Gruppen auf die Karten
+    /// </summary>
+    void SetupCardImages()
+    {
+        ImageManager imageManager = ImageManager.Instance;
+        int cardIndex = 0;
+
+        foreach (ImageManager.DeckGroup deckGroup in currentDeck.groups)
+        {
+            // Weise Bilder dieser Gruppe den Karten zu (requiredForMatch Karten pro Gruppe)
+            for (int i = 0; i < deckGroup.requiredForMatch && cardIndex < cards.Count; i++)
+            {
+                if (cardIndex >= cards.Count)
+                    break;
+
+                Card card = cards[cardIndex];
+                int imageIndex = i % deckGroup.imageIds.Count;
+                
+                if (imageIndex < deckGroup.imageIds.Count)
+                {
+                    int imageId = deckGroup.imageIds[imageIndex];
+                    card.groupId = deckGroup.groupId;
+                    card.frontSprite = imageManager.LoadPoolImageSprite(imageId);
+                    
+                    if (card.frontSprite == null)
+                    {
+                        Debug.LogWarning($"Sprite für Bild {imageId} konnte nicht geladen werden");
+                    }
+                }
+
+                cardIndex++;
+            }
+        }
+
+        // Mische die Karten
+        ShuffleCards();
+    }
+
+    /// <summary>
+    /// Wird aufgerufen, wenn eine Karte aufgedeckt wird
+    /// </summary>
+    public void CardRevealed(Card revealedCard)
+    {
+        if (checkingMatch || revealedCards.Contains(revealedCard))
+            return;
+
+        revealedCard.Reveal();
+        revealedCards.Add(revealedCard);
+
+        // Wenn genug Karten aufgedeckt wurden, prüfe auf Match
+        ImageManager.DeckGroup group = currentDeck.groups.Find(g => g.groupId == revealedCard.groupId);
+        if (group != null && revealedCards.Count >= group.requiredForMatch)
+        {
+            StartCoroutine(CheckForMatch());
+        }
+    }
+
+    /// <summary>
+    /// Prüft, ob die aufgedeckten Karten einer Gruppe entsprechen
+    /// </summary>
+    IEnumerator CheckForMatch()
+    {
+        checkingMatch = true;
+        yield return new WaitForSeconds(0.5f);
+
+        // Prüfe, ob alle aufgedeckten Karten zur gleichen Gruppe gehören
+        int groupId = revealedCards[0].groupId;
+        bool allSameGroup = true;
+
+        foreach (Card card in revealedCards)
+        {
+            if (card.groupId != groupId)
+            {
+                allSameGroup = false;
+                break;
+            }
+        }
+
+        ImageManager.DeckGroup group = currentDeck.groups.Find(g => g.groupId == groupId);
+
+        if (allSameGroup && group != null && revealedCards.Count == group.requiredForMatch)
+        {
+            // Match gefunden!
+            Debug.Log($"Match gefunden für Gruppe {group.groupName}!");
+            RemoveMatchingCards(groupId);
+            matchesFound++;
+
+            if (matchesFound >= totalMatches)
+            {
+                OnGameOver();
+            }
+        }
+        else
+        {
+            // Kein Match - Karten zurück
+            foreach (Card card in revealedCards)
+            {
+                card.Hide();
+            }
+        }
+
+        revealedCards.Clear();
+        yield return new WaitForSeconds(0.5f);
+        checkingMatch = false;
+    }
+
+    /// <summary>
+    /// Entfernt alle Karten einer Gruppe vom Spielfeld
+    /// </summary>
+    void RemoveMatchingCards(int groupId)
+    {
+        List<Card> cardsToRemove = new List<Card>();
+
+        foreach (Card card in cards)
+        {
+            if (card.groupId == groupId)
+            {
+                cardsToRemove.Add(card);
+            }
+        }
+
+        foreach (Card card in cardsToRemove)
+        {
+            card.gameObject.SetActive(false);
+            cards.Remove(card);
+        }
+    }
+
+    /// <summary>
+    /// Wird aufgerufen, wenn das Spiel vorbei ist
+    /// </summary>
+    void OnGameOver()
+    {
+        Debug.Log("Spiel vorbei!");
+        // TODO: Game Over UI anzeigen, Score anzeigen, etc.
+    }
+
+    /// <summary>
+    /// Mischt die Karten zufällig
+    /// </summary>
+    void ShuffleCards()
+    {
+        for (int i = cards.Count - 1; i > 0; i--)
+        {
+            int randomIndex = Random.Range(0, i + 1);
+
+            // Tausche
+            Card temp = cards[i];
+            cards[i] = cards[randomIndex];
+            cards[randomIndex] = temp;
+        }
+    }
 }
 
