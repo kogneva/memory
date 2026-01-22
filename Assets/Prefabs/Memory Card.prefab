@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 453313418402258970}
   - component: {fileID: 6124460614927182459}
   - component: {fileID: 6121552017556045204}
+  - component: {fileID: -474754320243529131}
   m_Layer: 5
   m_Name: Memory Card
   m_TagString: MemoryCard
@@ -120,3 +121,17 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &-474754320243529131
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4835312479648305540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 73f092e8488c8d8489482d85e0ff7575, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  groupId: 0
+  frontSprite: {fileID: 0}

@@ -1,6 +1,6 @@
-# ImageManager - Verwendungsbeispiele
+ï»¿# ImageManager - Verwendungsbeispiele
 
-## Überblick
+## Ãœberblick
 
 Das neue System ist in zwei Teile unterteilt:
 
@@ -14,10 +14,10 @@ Das neue System ist in zwei Teile unterteilt:
 ```csharp
 ImageManager imageManager = ImageManager.Instance;
 
-// Öffne die Galerie und lade Bilder
+// Ã–ffne die Galerie und lade Bilder
 // Dies wird mehrmals aufgerufen, um alle Bilder hochzuladen
 imageManager.AddImageToPool((addedImageId) => {
-    Debug.Log($"Bild {addedImageId} wurde zum Pool hinzugefügt");
+    Debug.Log($"Bild {addedImageId} wurde zum Pool hinzugefÃ¼gt");
 });
 ```
 
@@ -31,24 +31,24 @@ imageManager.AddImageToPool((addedImageId) => {
 int deckId1 = imageManager.CreateNewDeck("Tiere Deck");
 
 // Oder mehrere verschiedene Decks
-int deckId2 = imageManager.CreateNewDeck("Früchte Deck");
+int deckId2 = imageManager.CreateNewDeck("FrÃ¼chte Deck");
 ```
 
-### Schritt 3: Gruppen zu einem Deck hinzufügen
+### Schritt 3: Gruppen zu einem Deck hinzufÃ¼gen
 
 ```csharp
-// Füge eine Gruppe zu Deck 1 hinzu (z.B. 3 Karten pro Gruppe)
+// FÃ¼ge eine Gruppe zu Deck 1 hinzu (z.B. 3 Karten pro Gruppe)
 int groupId1 = imageManager.AddGroupToDeck(deckId1, "Hunde", requiredForMatch: 3);
 
 // Weitere Gruppen im gleichen Deck
 int groupId2 = imageManager.AddGroupToDeck(deckId1, "Katzen", requiredForMatch: 2);
-int groupId3 = imageManager.AddGroupToDeck(deckId1, "Vögel", requiredForMatch: 4);
+int groupId3 = imageManager.AddGroupToDeck(deckId1, "VÃ¶gel", requiredForMatch: 4);
 ```
 
 ### Schritt 4: Bilder aus dem Pool den Gruppen zuordnen
 
 ```csharp
-// Gruppe "Hunde" bekommen Bilder 0 und 1 (können unterschiedliche Hundebilder sein)
+// Gruppe "Hunde" bekommen Bilder 0 und 1 (kÃ¶nnen unterschiedliche Hundebilder sein)
 imageManager.AddImageToGroup(deckId1, groupId1, 0);  // Bild 1
 imageManager.AddImageToGroup(deckId1, groupId1, 1);  // Bild 2
 
@@ -56,7 +56,7 @@ imageManager.AddImageToGroup(deckId1, groupId1, 1);  // Bild 2
 imageManager.AddImageToGroup(deckId1, groupId2, 2);
 imageManager.AddImageToGroup(deckId1, groupId2, 3);
 
-// Gruppe "Vögel" bekommen Bilder 4, 5, 6, 7 (mehr Bilder für 4er Gruppe)
+// Gruppe "VÃ¶gel" bekommen Bilder 4, 5, 6, 7 (mehr Bilder fÃ¼r 4er Gruppe)
 imageManager.AddImageToGroup(deckId1, groupId3, 4);
 imageManager.AddImageToGroup(deckId1, groupId3, 5);
 imageManager.AddImageToGroup(deckId1, groupId3, 6);
@@ -73,7 +73,7 @@ gameController.InitializeGame(deckId1);
 
 ## Mehrere Decks mit gleichen Bildern
 
-Das ist jetzt sehr einfach möglich! Bilder können in mehreren Decks wiederverwendet werden:
+Das ist jetzt sehr einfach mÃ¶glich! Bilder kÃ¶nnen in mehreren Decks wiederverwendet werden:
 
 ```csharp
 // Deck 1: "Tiere"
@@ -90,7 +90,7 @@ imageManager.AddImageToGroup(deckId2, groupId2, 1);  // Bild 1 wieder verwendet
 imageManager.AddImageToGroup(deckId2, groupId2, 8);  // Neue Bild
 ```
 
-## Löschen
+## LÃ¶schen
 
 ```csharp
 // Entferne ein Bild aus dem Pool (wird aus allen Decks entfernt)
@@ -105,8 +105,8 @@ imageManager.RemoveImageFromGroup(deckId1, groupId1, 0);
 
 ## Vorteile dieser Struktur
 
-? **Einmalige Speicherung**: Bilder werden nur einmal auf dem Gerät gespeichert
-? **Wiederverwendung**: Bilder können in mehreren Decks verwendet werden
-? **Flexibilität**: Decks können beliebig konfiguriert werden
-? **Speichereffizienz**: Keine Duplikate von Bildern
-? **Persistenz**: Alles wird automatisch gespeichert und wiederhergestellt
+âœ… **Einmalige Speicherung**: Bilder werden nur einmal auf dem GerÃ¤t gespeichert
+âœ… **Wiederverwendung**: Bilder kÃ¶nnen in mehreren Decks verwendet werden
+âœ… **FlexibilitÃ¤t**: Decks kÃ¶nnen beliebig konfiguriert werden
+âœ… **Speichereffizienz**: Keine Duplikate von Bildern
+âœ… **Persistenz**: Alles wird automatisch gespeichert und wiederhergestellt
