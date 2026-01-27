@@ -1,24 +1,24 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 public class StartMenuController : MonoBehaviour
 {
-    [Header("Optional: UI Feedback")]
-    [Tooltip("Text der die Anzahl Bilder im Pool anzeigt (z.B. 'Pool: 15 Bilder')")]
-    public Text imagePoolCountText;
-
-    [Tooltip("Optional: Feedback-Text für Upload-Bestätigung")]
-    public Text uploadFeedbackText;
-
-    void Start()
+    void Awake()
     {
-        UpdateImagePoolCount();
+        // Stelle sicher, dass ImageManager VOR Start() existiert
+        EnsureImageManagerExists();
+    }
 
-        // Verstecke Feedback-Text am Anfang
-        if (uploadFeedbackText != null)
+    /// <summary>
+    /// Stellt sicher, dass der ImageManager existiert
+    /// </summary>
+    void EnsureImageManagerExists()
+    {
+        if (ImageManager.Instance == null)
         {
-            uploadFeedbackText.gameObject.SetActive(false);
+            // Erstelle ImageManager GameObject wenn nicht vorhanden
+            GameObject imageManagerObj = new GameObject("ImageManager");
+            imageManagerObj.AddComponent<ImageManager>();
         }
     }
 
@@ -28,67 +28,40 @@ public class StartMenuController : MonoBehaviour
     }
 
     /// <summary>
-    /// Öffnet die Galerie und lädt mehrere Bilder in den Pool
+    /// Ã–ffnet die Galerie und lÃ¤dt mehrere Bilder in den Pool
     /// </summary>
     public void OnUploadImagesClick()
     {
+        // Stelle sicher dass ImageManager existiert
         if (ImageManager.Instance == null)
         {
-            Debug.LogError("ImageManager nicht gefunden!");
-            return;
+            EnsureImageManagerExists();
+            
+            if (ImageManager.Instance == null)
+            {
+                Debug.LogError("ImageManager konnte nicht erstellt werden!");
+                return;
+            }
         }
 
+#if UNITY_EDITOR
+        // Im Unity Editor funktioniert NativeGallery nicht
+        Debug.LogWarning("NativeGallery funktioniert nicht im Unity Editor!");
+        Debug.LogWarning("Bitte baue fÃ¼r Android/iOS und teste auf einem GerÃ¤t.");
+#else
+        // Nur auf echten GerÃ¤ten (Android/iOS) ausfÃ¼hren
         ImageManager.Instance.AddImagesToPool((addedImageIds) =>
         {
             if (addedImageIds != null && addedImageIds.Count > 0)
             {
-                Debug.Log($"{addedImageIds.Count} Bilder zum Pool hinzugefügt");
-                UpdateImagePoolCount();
-                ShowUploadFeedback($"{addedImageIds.Count} Bilder hinzugefügt!");
+                Debug.Log($"{addedImageIds.Count} Bilder zum Pool hinzugefÃ¼gt");
             }
             else
             {
-                Debug.Log("Keine Bilder ausgewählt");
+                Debug.Log("Keine Bilder ausgewÃ¤hlt");
             }
         });
-    }
-
-    /// <summary>
-    /// Aktualisiert die Anzeige der Anzahl Bilder im Pool
-    /// </summary>
-    void UpdateImagePoolCount()
-    {
-        if (imagePoolCountText != null && ImageManager.Instance != null)
-        {
-            int count = ImageManager.Instance.imagePool != null
-                ? ImageManager.Instance.imagePool.Count
-                : 0;
-
-            imagePoolCountText.text = $"Pool: {count} Bilder";
-        }
-    }
-
-    /// <summary>
-    /// Zeigt eine kurze Bestätigungsmeldung an
-    /// </summary>
-    void ShowUploadFeedback(string message)
-    {
-        if (uploadFeedbackText != null)
-        {
-            uploadFeedbackText.text = message;
-            uploadFeedbackText.gameObject.SetActive(true);
-
-            // Verstecke nach 3 Sekunden
-            Invoke(nameof(HideUploadFeedback), 3f);
-        }
-    }
-
-    void HideUploadFeedback()
-    {
-        if (uploadFeedbackText != null)
-        {
-            uploadFeedbackText.gameObject.SetActive(false);
-        }
+#endif
     }
 
     public void OnQuitClick()

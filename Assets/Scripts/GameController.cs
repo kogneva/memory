@@ -8,6 +8,7 @@ using UnityEngine.SceneManagement;
 /// <summary>
 /// Verwaltet das Memory-Spiel mit Decks, Gruppen und Karten
 /// </summary>
+/// 
 public class GameController : MonoBehaviour
 {
     public static GameController Instance { get; private set; }
@@ -552,6 +553,11 @@ public class GameController : MonoBehaviour
 #endif
         Application.Quit();
         Debug.Log("Spiel wird beendet");
+    }
+    public void ToMainMenu()
+    {
+        SceneManager.LoadScene("MainMenu");
+        Debug.Log("Hauptmenü wird geladen");
     }
 }
 

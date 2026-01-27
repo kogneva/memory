@@ -97,16 +97,23 @@ public class ImageManager : MonoBehaviour
 
     void Awake()
     {
+        Debug.Log("ImageManager.Awake() wird ausgeführt");
+        
         if (Instance == null)
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            Debug.Log("ImageManager Instance gesetzt und DontDestroyOnLoad aktiviert");
+            
             // Lade Default-Sprites zunächst, damit sie als Fallback verfügbar sind
             LoadDefaultSpritesFromResources();
             LoadLibrary();
+            
+            Debug.Log($"ImageManager initialisiert. Pool hat {imagePool.Count} Bilder, {memoryDecks.Count} Decks");
         }
         else
         {
+            Debug.Log("ImageManager existiert bereits - zerstöre Duplikat");
             Destroy(gameObject);
         }
     }
