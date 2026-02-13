@@ -9,7 +9,7 @@ public class Card : MonoBehaviour
     
     private Image imageComponent;
     private Button buttonComponent;
-    private bool isRevealed = false;
+    private bool isRevealed;
 
     void Awake()
     {

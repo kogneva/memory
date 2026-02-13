@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Collections;
 
 [ExecuteAlways]
 public class AddMemoryButtons : MonoBehaviour

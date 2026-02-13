@@ -64,6 +64,7 @@ public class StartMenuController : MonoBehaviour
 #endif
     }
 
+
     public void OnQuitClick()
     {
 #if UNITY_EDITOR

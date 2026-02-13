@@ -52,14 +52,16 @@ public class ImageManager : MonoBehaviour
     public class SimplifiedDeckConfig
     {
         public string deckName;
-        public int groupCount;           // Anzahl der Gruppen
-        public int requiredForMatch;     // Karten pro Match (Gruppengröße)
-        public bool useSameImages;       // Alle Gruppen verwenden die gleichen Bilder
+        public int groupCount; 
+        public int groupSize;            
+        public int requiredForMatch;
+        public bool useSameImages;       // Alle Gruppen verwenden die gleichen Bilder //TODO: innerhalb! prüfen
         
-        public SimplifiedDeckConfig(string deckName, int groupCount, int requiredForMatch, bool useSameImages = false)
+        public SimplifiedDeckConfig(string deckName, int groupCount, int groupSize, int requiredForMatch, bool useSameImages = false)
         {
             this.deckName = deckName;
             this.groupCount = groupCount;
+            this.groupSize = groupSize;
             this.requiredForMatch = requiredForMatch;
             this.useSameImages = useSameImages;
         }
@@ -348,33 +350,41 @@ public class ImageManager : MonoBehaviour
     /// </summary>
     public DeckValidationResult ValidateSimplifiedDeck(SimplifiedDeckConfig config)
     {
-        // Mindestanzahl Gruppen: 1
-        if (config.groupCount < 1)
+        // Mindestanzahl Gruppen: 2
+        if (config.groupCount < 2)
         {
-            return new DeckValidationResult(false, "Mindestens 1 Gruppe erforderlich");
+            return new DeckValidationResult(false, "Mindestens 2 Gruppe erforderlich");
         }
 
         // Mindestgröße pro Gruppe: 2
-        if (config.requiredForMatch < 2)
+        if (config.groupSize < 2)
         {
-            return new DeckValidationResult(false, "Mindestens 2 Karten pro Match erforderlich");
+            return new DeckValidationResult(false, "Mindestens 2 Karten pro Gruppe erforderlich");
+        }
+
+        // requiredForMatch muss mindestens 2 sein
+        // requiredForMatch muss kleiner oder gleich groupSize sein
+        if (config.requiredForMatch<2||config.requiredForMatch > config.groupSize  )
+        {
+            return new DeckValidationResult(false, 
+                $"requiredForMatch ({config.requiredForMatch}) muss zwischen 2 und groupSize ({config.groupSize}) liegen");
         }
 
         int requiredImages;
         if (config.useSameImages)
         {
             // Wenn alle Gruppen die gleichen Bilder verwenden
-            // benötigen wir nur requiredForMatch Bilder
-            requiredImages = config.requiredForMatch;
+            // benötigen wir nur so viele Bilder wie Gruppen
+            requiredImages = config.groupCount;
         }
         else
         {
             // Jede Gruppe braucht unterschiedliche Bilder
             // Innerhalb eines Decks darf ein Bild nur in einer Gruppe vorkommen
-            requiredImages = config.groupCount * config.requiredForMatch;
+            requiredImages = config.groupCount * config.groupSize;
         }
 
-        int availableImages = imagePool != null ? imagePool.Count : 0;
+            int availableImages = imagePool != null ? imagePool.Count : 0;
 
         if (availableImages < requiredImages)
         {
@@ -484,11 +494,11 @@ public class ImageManager : MonoBehaviour
             }
 
             List<string> groupImages = imageAssignments[i];
-            
+
             // Prüfe Anzahl der Bilder
-            if (groupImages.Count != config.requiredForMatch)
+            if (groupImages.Count != config.groupSize)
             {
-                Debug.LogError($"Gruppe {i} hat {groupImages.Count} Bilder, benötigt aber {config.requiredForMatch}");
+                Debug.LogError($"Gruppe {i} hat {groupImages.Count} Bilder, benötigt aber {config.groupSize}");
                 return false;
             }
 
@@ -533,22 +543,30 @@ public class ImageManager : MonoBehaviour
 
         if (config.useSameImages)
         {
-            // Alle Gruppen verwenden die gleichen Bilder
-            List<string> sharedImages = availableImageIds.Take(config.requiredForMatch).ToList();
-            
+            // Klassisches Memory: 1 Bild pro Gruppe (wird mehrfach verwendet)
+            // Jede Gruppe bekommt ein anderes Bild
             foreach (DeckGroup group in deck.groups)
             {
-                group.imageIds.AddRange(sharedImages);
+                if (imageIndex < availableImageIds.Count)
+                {
+                    // Füge das gleiche Bild groupSize-mal hinzu
+                    string imageId = availableImageIds[imageIndex];
+                    for (int i = 0; i < config.groupSize; i++)
+                    {
+                        group.imageIds.Add(imageId);
+                    }
+                    imageIndex++;
+                }
             }
             
-            Debug.Log($"Alle {deck.groups.Count} Gruppen verwenden die gleichen {sharedImages.Count} Bilder");
+            Debug.Log($"Klassisches Memory: {deck.groups.Count} Gruppen mit je 1 Bild ({config.groupSize}x verwendet)");
         }
         else
         {
             // Jede Gruppe bekommt unterschiedliche Bilder
             foreach (DeckGroup group in deck.groups)
             {
-                for (int i = 0; i < config.requiredForMatch && imageIndex < availableImageIds.Count; i++)
+                for (int i = 0; i < config.groupSize && imageIndex < availableImageIds.Count; i++)
                 {
                     group.imageIds.Add(availableImageIds[imageIndex]);
                     imageIndex++;

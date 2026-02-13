@@ -28,14 +28,14 @@ public class GameController : MonoBehaviour
     
     private ImageManager.MemoryDeck currentDeck;
     private readonly List<Card> revealedCards = new List<Card>();
-    private bool checkingMatch = false;
-    private int matchesFound = 0;
-    private int totalMatches = 0;
+    private bool checkingMatch;
+    private int matchesFound;
+    private int totalMatches;
 
     [Header("Auto Deck Generation (when no user decks)")]
     [Tooltip("If >0 forces number of groups; otherwise groups = cards.Count / defaultRequiredForMatch")]
     [SerializeField]
-    private int defaultGroupCount = 0;
+    private int defaultGroupCount;
 
     [Tooltip("How many cards required per match (e.g. 2 for pairs)")]
     [SerializeField]
@@ -554,6 +554,7 @@ public class GameController : MonoBehaviour
         Application.Quit();
         Debug.Log("Spiel wird beendet");
     }
+
     public void ToMainMenu()
     {
         SceneManager.LoadScene("MainMenu");
