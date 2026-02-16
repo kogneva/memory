@@ -1,25 +1,26 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
+using TMPro; 
 
 public class DeckBuilderUI : MonoBehaviour
 {
-    [Header("Panels")]
-    public GameObject configPanel;
-    public GameObject assignmentPanel;
-
-    [Header("Config Panel")]
-    public InputField deckNameInput;
-    public InputField groupCountInput;
-    public InputField groupSizeInput;  
-    public InputField requiredForMatchInput; 
+    [Header("Config Panel - Inputs")]
+    public TMP_InputField deckNameInput;           
+    public TMP_InputField groupCountInput;         
+    public TMP_InputField groupSizeInput;          
+    public TMP_InputField requiredForMatchInput;   
     public Toggle useSameImagesToggle;
-    public Text modeDescriptionText;
-    public Text errorText;
 
-    [Header("Assignment Panel")]
-    public Text progressText;
+    [Header("Config Panel - Display")]
+    public TMP_Text modeDescriptionText;           
+    public TMP_Text errorText;                     
+
+    [Header("Assignment Panel - Display")]
+    public TMP_Text progressText;                  
     public Slider progressBar;
-    public Text groupInfoText;
+    public TMP_Text groupInfoText;                 
+
+    [Header("Assignment Panel - Containers")]
     public Transform selectedImagesContainer;
     public Transform availableImagesContainer;
 
@@ -45,7 +46,6 @@ public class DeckBuilderUI : MonoBehaviour
             });
         }
 
-        ShowConfigPanel();
         UpdateModeDescription();
     }
 
@@ -54,16 +54,9 @@ public class DeckBuilderUI : MonoBehaviour
         if (modeDescriptionText == null) return;
 
         if (isClassicMode)
-            modeDescriptionText.text = "Klassisch: 1 Bild pro Gruppe\n(mehrfach verwendet)";
+            modeDescriptionText.text = "Klassisch: Das gleiche Bild fÃ¼r ein Paar/eine Gruppe";
         else
-            modeDescriptionText.text = "Thematisch: Verschiedene Bilder pro Gruppe";
-    }
-
-    void ShowConfigPanel()
-    {
-        if (configPanel != null) configPanel.SetActive(true);
-        if (assignmentPanel != null) assignmentPanel.SetActive(false);
-        if (errorText != null) errorText.text = "";
+            modeDescriptionText.text = "Thematisch: Verschiedene Bilder bilden ein Paar/eine Gruppe";
     }
 
     public void OnStartClick()
@@ -78,16 +71,12 @@ public class DeckBuilderUI : MonoBehaviour
         int groupSize = int.Parse(groupSizeInput.text);
         int requiredForMatch = int.Parse(requiredForMatchInput.text);
 
-        // KORRIGIERT: Alle 5 Parameter übergeben
         if (deckBuilder.StartDeckConfiguration(deckNameInput.text, groupCount, groupSize, requiredForMatch, isClassicMode))
         {
-            if (configPanel != null) configPanel.SetActive(false);
-            if (assignmentPanel != null) assignmentPanel.SetActive(true);
             UpdateProgressBar();
         }
         else
         {
-            // KORRIGIERT: Alle 5 Parameter übergeben
             var config = new ImageManager.SimplifiedDeckConfig(
                 deckNameInput.text, groupCount, groupSize, requiredForMatch, isClassicMode
             );
@@ -96,9 +85,9 @@ public class DeckBuilderUI : MonoBehaviour
         }
     }
 
-    public void OnCancelConfigClick()
+    public void OnCancelClick()
     {
-        gameObject.SetActive(false);
+        if (errorText != null) errorText.text = "";
     }
 
     void UpdateProgressBar()
@@ -120,12 +109,12 @@ public class DeckBuilderUI : MonoBehaviour
         {
             if (isClassicMode)
             {
-                groupInfoText.text = $"Wähle 1 Bild für Gruppe {currentIndex + 1}";
+                groupInfoText.text = $"WÃ¤hle 1 Bild fÃ¼r Gruppe {currentIndex + 1}";
             }
             else
             {
                 int selected = deckBuilder.GetCurrentGroupImages().Count;
-                groupInfoText.text = $"Bilder: {selected}/{config.groupSize}";  // KORRIGIERT: groupSize statt requiredForMatch
+                groupInfoText.text = $"Bilder: {selected}/{config.groupSize}";
             }
         }
 
@@ -217,10 +206,6 @@ public class DeckBuilderUI : MonoBehaviour
         {
             UpdateProgressBar();
         }
-        else
-        {
-            ShowConfigPanel();
-        }
     }
 
     public void OnNextClick()
@@ -241,13 +226,6 @@ public class DeckBuilderUI : MonoBehaviour
         if (deckId != null)
         {
             Debug.Log($"Deck erstellt: {deckId}");
-            gameObject.SetActive(false);
         }
-    }
-
-    public void OnCancelAssignmentClick()
-    {
-        deckBuilder.CancelDeckCreation();
-        ShowConfigPanel();
     }
 }

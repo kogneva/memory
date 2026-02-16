@@ -5,20 +5,11 @@ public class StartMenuController : MonoBehaviour
 {
     void Awake()
     {
-        // Stelle sicher, dass ImageManager VOR Start() existiert
-        EnsureImageManagerExists();
-    }
-
-    /// <summary>
-    /// Stellt sicher, dass der ImageManager existiert
-    /// </summary>
-    void EnsureImageManagerExists()
-    {
+        // Punkt 8: Vereinfacht - ImageManager Singleton erstellt sich selbst in Awake()
+        // Nur erstellen wenn wirklich nicht vorhanden
         if (ImageManager.Instance == null)
         {
-            // Erstelle ImageManager GameObject wenn nicht vorhanden
-            GameObject imageManagerObj = new GameObject("ImageManager");
-            imageManagerObj.AddComponent<ImageManager>();
+            new GameObject("ImageManager").AddComponent<ImageManager>();
         }
     }
 
@@ -27,29 +18,13 @@ public class StartMenuController : MonoBehaviour
         SceneManager.LoadScene("MemoryGame");
     }
 
-    /// <summary>
-    /// Öffnet die Galerie und lädt mehrere Bilder in den Pool
-    /// </summary>
     public void OnUploadImagesClick()
     {
-        // Stelle sicher dass ImageManager existiert
-        if (ImageManager.Instance == null)
-        {
-            EnsureImageManagerExists();
-            
-            if (ImageManager.Instance == null)
-            {
-                Debug.LogError("ImageManager konnte nicht erstellt werden!");
-                return;
-            }
-        }
-
+        // Punkt 8: Redundante Prüfung entfernt - Awake() garantiert dass ImageManager existiert
 #if UNITY_EDITOR
-        // Im Unity Editor funktioniert NativeGallery nicht
         Debug.LogWarning("NativeGallery funktioniert nicht im Unity Editor!");
         Debug.LogWarning("Bitte baue für Android/iOS und teste auf einem Gerät.");
 #else
-        // Nur auf echten Geräten (Android/iOS) ausführen
         ImageManager.Instance.AddImagesToPool((addedImageIds) =>
         {
             if (addedImageIds != null && addedImageIds.Count > 0)
@@ -63,7 +38,6 @@ public class StartMenuController : MonoBehaviour
         });
 #endif
     }
-
 
     public void OnQuitClick()
     {

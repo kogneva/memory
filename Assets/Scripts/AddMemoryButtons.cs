@@ -12,7 +12,7 @@ public class AddMemoryButtons : MonoBehaviour
     [Header("Configuration")]
     [Tooltip("Number of pairs (each pair produces two cards).")]
     [SerializeField]
-    public int pairs = 4;
+    public int pairs = 4; //TODO: Werte von DeckBuilder übernehmen
 
     private void Awake()
     {
