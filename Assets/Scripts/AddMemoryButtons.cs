@@ -9,14 +9,47 @@ public class AddMemoryButtons : MonoBehaviour
     [SerializeField]
     private GameObject btn;
 
-    [Header("Configuration")]
-    [Tooltip("Number of pairs (each pair produces two cards).")]
     [SerializeField]
-    public int pairs = 4; //TODO: Werte von DeckBuilder übernehmen
+    private GameController gameController;
+
+    [Header("Configuration")]
+    [Tooltip("Anzahl der Gruppen (0 = Fallback verwenden)")]
+    [SerializeField]
+    private int fallbackGroupCount = 4;
+
+    [Tooltip("Karten pro Gruppe")]
+    [SerializeField]
+    private int fallbackGroupSize = 2;
+
+    // GroupCount: Wenn GameController 0 liefert oder nicht existiert, nutze Fallback
+    public int GroupCount
+    {
+        get
+        {
+            int count = gameController != null ? gameController.DefaultGroupCount : 0;
+            return count > 0 ? count : fallbackGroupCount;
+        }
+    }
+
+    // GroupSize: Wenn GameController 0 liefert oder nicht existiert, nutze Fallback
+    public int GroupSize
+    {
+        get
+        {
+            int size = gameController != null ? gameController.DefaultGroupSize : 0;
+            return size > 0 ? size : fallbackGroupSize;
+        }
+    }
+
+    public int TotalCards => GroupCount * GroupSize;
 
     private void Awake()
     {
-        // Only generate at runtime in Play Mode by default
+        if (gameController == null)
+        {
+            gameController = FindAnyObjectByType<GameController>();
+        }
+
         if (Application.isPlaying)
         {
             GenerateButtons();
@@ -34,21 +67,23 @@ public class AddMemoryButtons : MonoBehaviour
 
         ClearButtons();
 
-        int total = Mathf.Max(0, pairs) * 2;
+        int groupCount = GroupCount;
+        int groupSize = GroupSize;
+        int total = groupCount * groupSize;
+
+        Debug.Log($"AddMemoryButtons: Generating {total} cards ({groupCount} groups × {groupSize} cards per group)");
+
         for (int i = 0; i < total; i++)
         {
             GameObject button = Instantiate(btn, memoryField, false);
             button.name = i.ToString();
-            button.transform.SetParent(memoryField, false);
 
-            // set tag so GameController can find them
             try
             {
                 button.tag = "MemoryCard";
             }
             catch { }
 
-            // ensure RectTransform defaults
             var rt = button.GetComponent<RectTransform>();
             if (rt != null)
             {
@@ -63,7 +98,6 @@ public class AddMemoryButtons : MonoBehaviour
         if (memoryField == null)
             return;
 
-        // Destroy all child objects in edit and play mode
         int childCount = memoryField.childCount;
         for (int i = childCount - 1; i >= 0; i--)
         {

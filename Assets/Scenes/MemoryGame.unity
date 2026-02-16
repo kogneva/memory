@@ -1366,7 +1366,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   memoryField: {fileID: 1592388895}
   btn: {fileID: 4835312479648305540, guid: b7a03a334f907194abdcf1b364c3aeea, type: 3}
-  pairs: 4
+  gameController: {fileID: 1712785699}
+  fallbackGroupCount: 4
+  fallbackGroupSize: 2
 --- !u!4 &1712785698
 Transform:
   m_ObjectHideFlags: 0
@@ -1397,8 +1399,10 @@ MonoBehaviour:
   backSprite: {fileID: 0}
   gameOverPanel: {fileID: 890391754}
   cards: []
-  defaultGroupCount: 0
+  defaultGroupCount: 4
+  defaultGroupSize: 2
   defaultRequiredForMatch: 2
+  alwaysRecreateAutoDeck: 0
 --- !u!1 &1734500737
 GameObject:
   m_ObjectHideFlags: 0

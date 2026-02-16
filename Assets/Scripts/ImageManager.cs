@@ -22,7 +22,8 @@ public class ImageManager : MonoBehaviour
     {
         public string groupId;
         public string groupName;
-        public int requiredForMatch = 2;
+        public int groupSize = 2;        // NEU: Anzahl Karten in der Gruppe
+        public int requiredForMatch = 2; // Wie viele davon für Match nötig
         public List<string> imageIds = new List<string>();
     }
 
@@ -380,7 +381,7 @@ public class ImageManager : MonoBehaviour
     /// <summary>
     /// Erstellt ein Default-Deck mit leeren imageIds (nutzt Fallback-Sprites)
     /// </summary>
-    public string CreateDefaultDeck(int groupCount, int requiredForMatch = 2, string deckName = "Default Deck")
+    public string CreateDefaultDeck(int groupCount, int groupSize, int requiredForMatch = 2, string deckName = "Default Deck")
     {
         string deckId = Guid.NewGuid().ToString();
         MemoryDeck deck = new MemoryDeck
@@ -396,6 +397,7 @@ public class ImageManager : MonoBehaviour
             {
                 groupId = Guid.NewGuid().ToString(),
                 groupName = $"Group_{i}",
+                groupSize = Mathf.Max(1, groupSize),              // NEU
                 requiredForMatch = Mathf.Max(1, requiredForMatch),
                 imageIds = new List<string>()
             });
@@ -403,7 +405,7 @@ public class ImageManager : MonoBehaviour
 
         memoryDecks.Add(deck);
         SaveLibrary();
-        Debug.Log($"Default deck '{deckName}' erstellt mit {groupCount} Gruppen, deckId={deckId}");
+        Debug.Log($"Default deck '{deckName}' erstellt: {groupCount} Gruppen × {groupSize} Karten (requiredForMatch={requiredForMatch})");
         return deckId;
     }
 

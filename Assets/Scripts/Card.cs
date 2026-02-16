@@ -4,7 +4,7 @@ using UnityEngine.UI;
 public class Card : MonoBehaviour
 {
     [Header("Card Info")]
-    public string groupId; // switched to string GUID
+    public string groupId; 
     public Sprite frontSprite;
     
     private Image imageComponent;
