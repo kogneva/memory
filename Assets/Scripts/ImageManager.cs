@@ -13,8 +13,9 @@ public class ImageManager : MonoBehaviour
     {
         public string imageId;
         public string imagePath;
-        public string imageName;
+        public string imageName;            
         [NonSerialized] public Sprite sprite;
+        public bool isDefaultSprite;
     }
 
     [System.Serializable]
@@ -22,8 +23,8 @@ public class ImageManager : MonoBehaviour
     {
         public string groupId;
         public string groupName;
-        public int groupSize = 2;        // NEU: Anzahl Karten in der Gruppe
-        public int requiredForMatch = 2; // Wie viele davon für Match nötig
+        public int groupSize = 2;
+        public int requiredForMatch = 2;
         public List<string> imageIds = new List<string>();
     }
 
@@ -78,6 +79,8 @@ public class ImageManager : MonoBehaviour
 
     private const string DEFAULT_RESOURCE_FOLDER = "Sprites/diamond-pearl";
     private List<Sprite> defaultSprites = new List<Sprite>();
+    
+    private const int MAX_DEFAULT_IMAGES_TO_LOAD = 40;
 
     void Awake()
     {
@@ -99,6 +102,79 @@ public class ImageManager : MonoBehaviour
             Debug.Log("ImageManager existiert bereits - zerstöre Duplikat");
             Destroy(gameObject);
         }
+    }
+
+    // Lädt Default-Sprites in den Pool (max 40, nur wenn keine User-Bilder)
+    private void LoadDefaultSpritesToPool()
+    {
+        if (defaultSprites == null || defaultSprites.Count == 0)
+        {
+            Debug.LogWarning("Keine Default-Sprites verfügbar");
+            return;
+        }
+
+        // Prüfen ob User-Bilder existieren - dann keine Default-Sprites laden
+        if (HasUserImages())
+        {
+            Debug.Log("User-Bilder vorhanden - keine Default-Sprites laden");
+            return;
+        }
+
+        // Alle Default-Sprites entfernen bevor neue geladen werden
+        RemoveAllDefaultSprites();
+
+        int count = Mathf.Min(defaultSprites.Count, MAX_DEFAULT_IMAGES_TO_LOAD);
+        Debug.Log($"Lade {count} von {defaultSprites.Count} Default-Sprites in den Pool");
+
+        for (int i = 0; i < count; i++)
+        {
+            Sprite sprite = defaultSprites[i];
+            string newId = Guid.NewGuid().ToString();
+            
+            PoolImage poolImage = new PoolImage
+            {
+                imageId = newId,
+                imagePath = "", 
+                imageName = sprite.name,
+                sprite = sprite, 
+                isDefaultSprite = true 
+            };
+
+            imagePool.Add(poolImage);
+        }
+
+        SaveLibrary();
+        Debug.Log($"{count} Default-Bilder zum Pool hinzugefügt (max: {MAX_DEFAULT_IMAGES_TO_LOAD})");
+    }
+
+    // Öffentliche Methode zum manuellen Laden von Default-Sprites
+    public void LoadDefaultSpritesToPoolManually()
+    {
+        // Entferne alle Bilder und lade nur Default-Sprites
+        imagePool.Clear();
+        LoadDefaultSpritesToPool();
+    }
+
+    // Entfernt ALLE Default-Sprites aus dem Pool
+    private void RemoveAllDefaultSprites()
+    {
+        int removed = imagePool.RemoveAll(img => img.isDefaultSprite);
+        if (removed > 0)
+        {
+            Debug.Log($"{removed} Default-Sprites aus Pool entfernt");
+        }
+    }
+
+    // Prüft ob User-Bilder (keine Default-Sprites) im Pool sind
+    private bool HasUserImages()
+    {
+        return imagePool.Any(img => !img.isDefaultSprite);
+    }
+
+    // Prüft, ob Default-Sprites im Pool vorhanden sind
+    private bool HasDefaultSprites()
+    {
+        return imagePool.Any(img => img.isDefaultSprite);
     }
 
     // ============== BILD-POOL VERWALTUNG ==============
@@ -143,6 +219,12 @@ public class ImageManager : MonoBehaviour
             if (string.IsNullOrEmpty(sourcePath) || !File.Exists(sourcePath))
                 return null;
 
+            // Beim ersten User-Bild ALLE Default-Sprites entfernen
+            if (HasDefaultSprites())
+            {
+                RemoveAllDefaultSprites();
+            }
+
             string fileName = Path.GetFileName(sourcePath);
             string targetFileName = $"pool_image_{Guid.NewGuid()}_{fileName}";
             string targetPath = Path.Combine(Application.persistentDataPath, targetFileName);
@@ -155,7 +237,8 @@ public class ImageManager : MonoBehaviour
             {
                 imageId = newId,
                 imagePath = targetPath,
-                imageName = fileName
+                imageName = fileName,
+                isDefaultSprite = false
             };
 
             imagePool.Add(poolImage);
@@ -185,7 +268,7 @@ public class ImageManager : MonoBehaviour
                 }
             }
 
-            if (File.Exists(poolImage.imagePath))
+            if (!string.IsNullOrEmpty(poolImage.imagePath) && File.Exists(poolImage.imagePath))
             {
                 try
                 {
@@ -198,7 +281,17 @@ public class ImageManager : MonoBehaviour
             }
 
             imagePool.Remove(poolImage);
-            SaveLibrary();
+            
+            // Wenn keine User-Bilder mehr da sind, Default-Sprites laden
+            if (!HasUserImages())
+            {
+                LoadDefaultSpritesToPool();
+            }
+            else
+            {
+                SaveLibrary();
+            }
+            
             Debug.Log($"Bild {imageId} aus Pool entfernt");
         }
     }
@@ -213,18 +306,45 @@ public class ImageManager : MonoBehaviour
         PoolImage poolImage = GetPoolImage(imageId);
         if (poolImage == null)
         {
-            Debug.LogWarning($"Bild mit ID {imageId} nicht gefunden, verwende Default-Sprite");
+            Debug.LogWarning($"Bild mit ID {imageId} nicht gefunden");
             return GetDefaultSpriteByGuid(imageId);
         }
 
+        // Wenn Sprite bereits gecacht ist
         if (poolImage.sprite != null)
             return poolImage.sprite;
 
+        // Default-Sprite-Logik
+        if (poolImage.isDefaultSprite)
+        {
+            Sprite defaultSprite = defaultSprites.Find(s => s.name == poolImage.imageName);
+            if (defaultSprite != null)
+            {
+                poolImage.sprite = defaultSprite;
+                return defaultSprite;
+            }
+            
+            Debug.LogWarning($"Default-Sprite '{poolImage.imageName}' nicht in defaultSprites gefunden");
+            return GetDefaultSpriteByGuid(poolImage.imageId);
+        }
+
+        // User-Bild: Pfad muss vorhanden sein
+        if (string.IsNullOrEmpty(poolImage.imagePath))
+        {
+            Debug.LogWarning($"User-Bild {imageId} hat keinen Pfad - wird entfernt");
+            imagePool.Remove(poolImage);
+            SaveLibrary();
+            return GetDefaultSpriteByGuid(imageId);
+        }
+
+        // Lade User-Bild von Pfad
         Sprite s = LoadSpriteFromPath(poolImage.imagePath);
         if (s == null)
         {
-            Debug.LogWarning($"Konnte Sprite von Pfad {poolImage.imagePath} nicht laden, verwende Default-Sprite");
-            return GetDefaultSpriteByGuid(poolImage.imageId);
+            Debug.LogWarning($"Konnte Sprite von Pfad {poolImage.imagePath} nicht laden - wird entfernt");
+            imagePool.Remove(poolImage);
+            SaveLibrary();
+            return GetDefaultSpriteByGuid(imageId);
         }
 
         poolImage.sprite = s;
@@ -284,6 +404,7 @@ public class ImageManager : MonoBehaviour
             if (sprites != null && sprites.Length > 0)
             {
                 defaultSprites = new List<Sprite>(sprites);
+                Debug.Log($"{defaultSprites.Count} Default-Sprites aus Resources geladen");
             }
             else
             {
@@ -314,6 +435,14 @@ public class ImageManager : MonoBehaviour
 
         int requiredImages = config.useSameImages ? config.groupCount : config.groupCount * config.groupSize;
         int availableImages = imagePool?.Count ?? 0;
+
+        // Wenn Pool leer ist, automatisch Default-Sprites laden
+        if (availableImages == 0 && defaultSprites != null && defaultSprites.Count > 0)
+        {
+            Debug.Log("Pool ist leer - lade Default-Sprites (max 40)");
+            LoadDefaultSpritesToPool();
+            availableImages = imagePool?.Count ?? 0;
+        }
 
         if (availableImages < requiredImages)
         {
@@ -357,6 +486,7 @@ public class ImageManager : MonoBehaviour
             {
                 groupId = Guid.NewGuid().ToString(),
                 groupName = $"Gruppe {i + 1}",
+                groupSize = config.groupSize,          
                 requiredForMatch = config.requiredForMatch,
                 imageIds = imageAssignments != null && imageAssignments.ContainsKey(i) 
                     ? new List<string>(imageAssignments[i]) 
@@ -378,9 +508,6 @@ public class ImageManager : MonoBehaviour
         return deckId;
     }
 
-    /// <summary>
-    /// Erstellt ein Default-Deck mit leeren imageIds (nutzt Fallback-Sprites)
-    /// </summary>
     public string CreateDefaultDeck(int groupCount, int groupSize, int requiredForMatch = 2, string deckName = "Default Deck")
     {
         string deckId = Guid.NewGuid().ToString();
@@ -397,7 +524,7 @@ public class ImageManager : MonoBehaviour
             {
                 groupId = Guid.NewGuid().ToString(),
                 groupName = $"Group_{i}",
-                groupSize = Mathf.Max(1, groupSize),              // NEU
+                groupSize = Mathf.Max(1, groupSize),
                 requiredForMatch = Mathf.Max(1, requiredForMatch),
                 imageIds = new List<string>()
             });
@@ -573,12 +700,13 @@ public class ImageManager : MonoBehaviour
                 if (poolData != null)
                 {
                     imagePool = poolData.images ?? new List<PoolImage>();
+                    
+                    // Bereinige ungültige Einträge
+                    CleanupInvalidPoolImages();
+                    
+                    // Default-Sprites nach dem Laden wieder verknüpfen
+                    ReloadDefaultSprites();
                 }
-            }
-
-            if (imagePool == null || imagePool.Count == 0)
-            {
-                Debug.Log("Kein Benutzerbild im Pool gefunden, Default-Sprites werden verwendet");
             }
 
             if (PlayerPrefs.HasKey(PLAYERPREFS_DECKS_KEY))
@@ -590,15 +718,114 @@ public class ImageManager : MonoBehaviour
                     memoryDecks = decksData.decks ?? new List<MemoryDeck>();
                 }
             }
+
+            // Wenn keine User-Bilder vorhanden, Default-Sprites laden
+            if (!HasUserImages())
+            {
+                LoadDefaultSpritesToPool();
+            }
         }
         catch (Exception e)
         {
             Debug.LogError($"Fehler beim Laden: {e.Message}");
             imagePool = new List<PoolImage>();
             memoryDecks = new List<MemoryDeck>();
+            LoadDefaultSpritesToPool();
         }
     }
 
+    // Bereinigt ungültige Pool-Einträge (ohne Pfad und kein Default-Sprite)
+    private void CleanupInvalidPoolImages()
+    {
+        int initialCount = imagePool.Count;
+        
+        // Entferne Einträge die weder Default-Sprite noch gültigen Pfad haben
+        imagePool.RemoveAll(img => 
+            !img.isDefaultSprite && string.IsNullOrEmpty(img.imagePath));
+        
+        // Entferne Default-Sprites die über dem Limit sind
+        var defaultImages = imagePool.Where(img => img.isDefaultSprite).ToList();
+        if (defaultImages.Count > MAX_DEFAULT_IMAGES_TO_LOAD)
+        {
+            for (int i = MAX_DEFAULT_IMAGES_TO_LOAD; i < defaultImages.Count; i++)
+            {
+                imagePool.Remove(defaultImages[i]);
+            }
+        }
+
+        int removed = initialCount - imagePool.Count;
+        if (removed > 0)
+        {
+            Debug.Log($"{removed} ungültige Pool-Einträge entfernt");
+            SaveLibrary();
+        }
+    }
+
+    // Lädt Sprite-Referenzen für Default-Sprites nach dem Laden neu
+    private void ReloadDefaultSprites()
+    {
+        if (defaultSprites == null || defaultSprites.Count == 0)
+        {
+            Debug.LogWarning("Keine Default-Sprites zum Wiederherstellen verfügbar");
+            return;
+        }
+
+        int reloaded = 0;
+        List<PoolImage> toRemove = new List<PoolImage>();
+        
+        foreach (PoolImage poolImage in imagePool)
+        {
+            if (poolImage.isDefaultSprite && poolImage.sprite == null)
+            {
+                Sprite sprite = defaultSprites.Find(s => s.name == poolImage.imageName);
+                if (sprite != null)
+                {
+                    poolImage.sprite = sprite;
+                    reloaded++;
+                }
+                else
+                {
+                    // Default-Sprite nicht gefunden - zum Entfernen markieren
+                    toRemove.Add(poolImage);
+                }
+            }
+        }
+
+        // Entferne nicht gefundene Default-Sprites
+        foreach (var img in toRemove)
+        {
+            imagePool.Remove(img);
+        }
+        
+        if (reloaded > 0)
+        {
+            Debug.Log($"{reloaded} Default-Sprite-Referenzen wiederhergestellt");
+        }
+        
+        if (toRemove.Count > 0)
+        {
+            Debug.Log($"{toRemove.Count} nicht mehr verfügbare Default-Sprites entfernt");
+            SaveLibrary();
+        }
+    }
+
+    // DEBUG: Löscht alle gespeicherten Daten
+    [ContextMenu("Clear All Data")]
+    public void ClearAllData()
+    {
+        PlayerPrefs.DeleteKey(PLAYERPREFS_POOL_KEY);
+        PlayerPrefs.DeleteKey(PLAYERPREFS_DECKS_KEY);
+        PlayerPrefs.Save();
+        
+        imagePool.Clear();
+        memoryDecks.Clear();
+        
+        Debug.Log("Alle gespeicherten Daten gelöscht!");
+        
+        // Lade Default-Sprites neu
+        LoadDefaultSpritesToPool();
+    }
+    
     [System.Serializable]
     private class PoolData
     {
