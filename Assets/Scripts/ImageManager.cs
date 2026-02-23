@@ -81,7 +81,8 @@ public class ImageManager : MonoBehaviour
     private List<Sprite> defaultSprites = new List<Sprite>();
     
     private const int MAX_DEFAULT_IMAGES_TO_LOAD = 40;
-
+    private const string PLAYERPREFS_SELECTED_DECK = "SELECTED_DECK_ID";
+        
     void Awake()
     {
         Debug.Log("ImageManager.Awake() wird ausgeführt");
@@ -540,6 +541,9 @@ public class ImageManager : MonoBehaviour
     {
         HashSet<string> usedImages = new HashSet<string>();
 
+        // Im klassischen Modus nur 1 Bild pro Gruppe erforderlich
+        int requiredImagesPerGroup = config.useSameImages ? 1 : config.groupSize;
+
         for (int i = 0; i < config.groupCount; i++)
         {
             if (!imageAssignments.ContainsKey(i))
@@ -550,9 +554,9 @@ public class ImageManager : MonoBehaviour
 
             List<string> groupImages = imageAssignments[i];
 
-            if (groupImages.Count != config.groupSize)
+            if (groupImages.Count != requiredImagesPerGroup)
             {
-                Debug.LogError($"Gruppe {i} hat {groupImages.Count} Bilder, benötigt aber {config.groupSize}");
+                Debug.LogError($"Gruppe {i} hat {groupImages.Count} Bilder, benötigt aber {requiredImagesPerGroup}");
                 return false;
             }
 
@@ -826,6 +830,28 @@ public class ImageManager : MonoBehaviour
         LoadDefaultSpritesToPool();
     }
     
+    public string GetSelectedDeckId()
+    {
+        return PlayerPrefs.GetString(PLAYERPREFS_SELECTED_DECK, null);
+    }
+
+    public void SetSelectedDeck(string deckId)
+    {
+        if (string.IsNullOrEmpty(deckId))
+            PlayerPrefs.DeleteKey(PLAYERPREFS_SELECTED_DECK);
+        else
+            PlayerPrefs.SetString(PLAYERPREFS_SELECTED_DECK, deckId);
+        
+        PlayerPrefs.Save();
+        Debug.Log($"Ausgewähltes Deck: {deckId}");
+    }
+
+    public MemoryDeck GetSelectedDeck()
+    {
+        string id = GetSelectedDeckId();
+        return string.IsNullOrEmpty(id) ? null : GetDeck(id);
+    }
+
     [System.Serializable]
     private class PoolData
     {

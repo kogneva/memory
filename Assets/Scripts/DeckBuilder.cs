@@ -80,9 +80,12 @@ public class DeckBuilder : MonoBehaviour
 
         List<string> currentGroupImages = imageAssignments[currentGroupIndex];
 
-        if (currentGroupImages.Count >= currentConfig.groupSize)
+        // Im klassischen Modus nur 1 Bild pro Gruppe erlauben
+        int maxImagesPerGroup = currentConfig.useSameImages ? 1 : currentConfig.groupSize;
+
+        if (currentGroupImages.Count >= maxImagesPerGroup)
         {
-            Debug.LogError($"Gruppe {currentGroupIndex + 1} ist bereits vollständig ({currentConfig.groupSize} Bilder)");
+            Debug.LogError($"Gruppe {currentGroupIndex + 1} ist bereits vollständig ({maxImagesPerGroup} Bild(er))");
             return false;
         }
 
@@ -105,7 +108,7 @@ public class DeckBuilder : MonoBehaviour
         }
 
         currentGroupImages.Add(imageId);
-        Debug.Log($"Bild {imageId} zu Gruppe {currentGroupIndex + 1} hinzugefügt ({currentGroupImages.Count}/{currentConfig.groupSize})");
+        Debug.Log($"Bild {imageId} zu Gruppe {currentGroupIndex + 1} hinzugefügt ({currentGroupImages.Count}/{maxImagesPerGroup})");
 
         return true;
     }
@@ -151,7 +154,9 @@ public class DeckBuilder : MonoBehaviour
             return false;
         }
 
-        return imageAssignments[currentGroupIndex].Count == currentConfig.groupSize;
+        // Im klassischen Modus nur 1 Bild pro Gruppe erforderlich
+        int requiredImages = currentConfig.useSameImages ? 1 : currentConfig.groupSize;
+        return imageAssignments[currentGroupIndex].Count >= requiredImages;
     }
 
     public bool NextGroup()
@@ -248,11 +253,14 @@ public class DeckBuilder : MonoBehaviour
             return null;
         }
 
+        // Im klassischen Modus nur 1 Bild pro Gruppe erforderlich
+        int requiredImages = currentConfig.useSameImages ? 1 : currentConfig.groupSize;
+
         for (int i = 0; i < currentConfig.groupCount; i++)
         {
-            if (imageAssignments[i].Count != currentConfig.groupSize)
+            if (imageAssignments[i].Count != requiredImages)
             {
-                Debug.LogError($"Gruppe {i + 1} ist nicht vollständig ({imageAssignments[i].Count}/{currentConfig.groupSize})");
+                Debug.LogError($"Gruppe {i + 1} ist nicht vollständig ({imageAssignments[i].Count}/{requiredImages})");
                 return null;
             }
         }
@@ -262,6 +270,10 @@ public class DeckBuilder : MonoBehaviour
         if (deckId != null)
         {
             Debug.Log($"Deck '{currentConfig.deckName}' erfolgreich erstellt mit ID {deckId}");
+            
+            // NEU: Automatisch als aktives Deck setzen
+            ImageManager.Instance.SetSelectedDeck(deckId);
+            
             Reset();
         }
 
@@ -304,10 +316,13 @@ public class DeckBuilder : MonoBehaviour
             return 0f;
         }
 
+        // Im klassischen Modus nur 1 Bild pro Gruppe erforderlich
+        int requiredImages = currentConfig.useSameImages ? 1 : currentConfig.groupSize;
+
         int completeGroups = 0;
         for (int i = 0; i < currentConfig.groupCount; i++)
         {
-            if (imageAssignments[i].Count == currentConfig.groupSize)
+            if (imageAssignments[i].Count == requiredImages)
             {
                 completeGroups++;
             }

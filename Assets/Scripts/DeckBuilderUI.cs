@@ -273,9 +273,13 @@ public class DeckBuilderUI : MonoBehaviour
             if (isAvailable)
             {
                 imgBtn.onImageClicked.AddListener((id) => {
-                    if (deckBuilder != null && deckBuilder.AddImageToCurrentGroup(id))
+                    // Prüfen ob Gruppe bereits voll ist BEVOR wir hinzufügen
+                    if (deckBuilder != null && !deckBuilder.IsCurrentGroupComplete())
                     {
-                        UpdateProgressBar();
+                        if (deckBuilder.AddImageToCurrentGroup(id))
+                        {
+                            UpdateProgressBar();
+                        }
                     }
                 });
             }
@@ -301,8 +305,19 @@ public class DeckBuilderUI : MonoBehaviour
 
     public void OnNextClick()
     {
-        if (deckBuilder != null && deckBuilder.IsCurrentGroupComplete())
+        if (deckBuilder == null) return;
+        
+        var config = deckBuilder.GetCurrentConfig();
+        if (config == null) return;  // NEU: Null-Check
+    
+        if (deckBuilder.IsCurrentGroupComplete())
         {
+            if (deckBuilder.GetCurrentGroupIndex() >= config.groupCount - 1)
+            {
+                OnFinishClick();
+                return;
+            }
+            
             if (deckBuilder.NextGroup())
             {
                 UpdateProgressBar();

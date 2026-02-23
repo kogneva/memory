@@ -21,6 +21,11 @@ public class GameController : MonoBehaviour
     [SerializeField]
     private GameObject gameOverPanel;
 
+    [Header("Deck Selection")]
+    [SerializeField] private GameObject deckSelectionPanel;
+    [SerializeField] private Transform deckButtonContainer;
+    [SerializeField] private GameObject deckButtonPrefab;
+
     public List<Card> cards = new List<Card>();
     
     private ImageManager.MemoryDeck currentDeck;
@@ -41,11 +46,6 @@ public class GameController : MonoBehaviour
     [Tooltip("Wie viele Karten müssen für einen Match aufgedeckt werden")]
     [SerializeField]
     private int defaultRequiredForMatch = 2;
-
-    [Header("Debug")]
-    [Tooltip("Wenn aktiviert, wird das Auto-Deck bei jedem Start neu erstellt (ignoriert gespeicherte Decks)")]
-    [SerializeField]
-    private bool alwaysRecreateAutoDeck = false;
 
     public int DefaultGroupCount => defaultGroupCount;
     public int DefaultGroupSize => defaultGroupSize;
@@ -80,81 +80,41 @@ public class GameController : MonoBehaviour
     {
         GetCards();
 
-        if (ImageManager.Instance != null)
+        if (ImageManager.Instance == null)
         {
-            // NEU: Prüfe ob Auto-Deck neu erstellt werden soll
-            bool needsNewDeck = ImageManager.Instance.memoryDecks == null || 
-                                ImageManager.Instance.memoryDecks.Count == 0 ||
-                                alwaysRecreateAutoDeck ||
-                                ShouldRecreateAutoDeck();
-
-            if (needsNewDeck)
-            {
-                // Entferne alte Auto-Decks
-                RemoveAutoDecks();
-
-                Debug.Log($"Creating new auto-deck: {defaultGroupCount} groups × {defaultGroupSize} cards (requiredForMatch={defaultRequiredForMatch})");
-                
-                string newDeckId = ImageManager.Instance.CreateDefaultDeck(
-                    defaultGroupCount, 
-                    defaultGroupSize,
-                    defaultRequiredForMatch, 
-                    "AutoDefaultDeck");
-
-                InitializeGame(newDeckId);
-                return;
-            }
-
-            if (currentDeck == null && ImageManager.Instance.memoryDecks.Count > 0)
-            {
-                Debug.Log("Kein Deck initialisiert - starte automatisch Deck 0");
-                InitializeGame(ImageManager.Instance.memoryDecks[0].deckId);
-                return;
-            }
-        }
-
-        if (currentDeck == null)
-        {
+            Debug.LogError("ImageManager.Instance ist null!");
             SetupCardImages();
+            return;
+        }
+
+        var selectedDeck = ImageManager.Instance.GetSelectedDeck();
+        
+        if (selectedDeck != null)
+        {
+            Debug.Log($"Starte mit ausgewähltem Deck: {selectedDeck.deckName}");
+            InitializeGame(selectedDeck.deckId);
+        }
+        else if (ImageManager.Instance.memoryDecks?.Count > 0)
+        {
+            var firstDeck = ImageManager.Instance.memoryDecks[0];
+            ImageManager.Instance.SetSelectedDeck(firstDeck.deckId);
+            InitializeGame(firstDeck.deckId);
+        }
+        else
+        {
+            CreateAndStartAutoDeck();
         }
     }
 
-    /// <summary>
-    /// Prüft ob das vorhandene Auto-Deck mit den aktuellen Einstellungen übereinstimmt
-    /// </summary>
-    bool ShouldRecreateAutoDeck()
+    void CreateAndStartAutoDeck()
     {
-        if (ImageManager.Instance.memoryDecks == null || ImageManager.Instance.memoryDecks.Count == 0)
-            return false;
-
-        // Finde das Auto-Deck
-        var autoDeck = ImageManager.Instance.memoryDecks.Find(d => d.deckName == "AutoDefaultDeck");
-        if (autoDeck == null)
-            return false; // Kein Auto-Deck vorhanden
-
-        // Prüfe ob die Konfiguration übereinstimmt
-        if (autoDeck.groups.Count != defaultGroupCount)
-        {
-            Debug.Log($"Auto-Deck hat {autoDeck.groups.Count} Gruppen, aber {defaultGroupCount} sind konfiguriert - erstelle neu");
-            return true;
-        }
-
-        if (autoDeck.groups.Count > 0)
-        {
-            var firstGroup = autoDeck.groups[0];
-            if (firstGroup.groupSize != defaultGroupSize || firstGroup.requiredForMatch != defaultRequiredForMatch)
-            {
-                Debug.Log($"Auto-Deck Konfiguration hat sich geändert - erstelle neu");
-                return true;
-            }
-        }
-
-        return false;
+        RemoveAutoDecks();
+        string newDeckId = ImageManager.Instance.CreateDefaultDeck(
+            defaultGroupCount, defaultGroupSize, defaultRequiredForMatch, "AutoDefaultDeck");
+        ImageManager.Instance.SetSelectedDeck(newDeckId);
+        InitializeGame(newDeckId);
     }
 
-    /// <summary>
-    /// Entfernt alle Auto-Decks aus dem ImageManager
-    /// </summary>
     void RemoveAutoDecks()
     {
         if (ImageManager.Instance.memoryDecks == null)
@@ -414,7 +374,6 @@ public class GameController : MonoBehaviour
         SceneManager.LoadScene("MainMenu");
     }
 
-    // NEU: Editor-Helfer zum Löschen gespeicherter Decks
     [ContextMenu("Clear All Saved Decks (PlayerPrefs)")]
     void ClearSavedDecks()
     {
@@ -422,6 +381,34 @@ public class GameController : MonoBehaviour
         PlayerPrefs.DeleteKey("MEMORY_DECKS");
         PlayerPrefs.Save();
         Debug.Log("Alle gespeicherten Decks wurden gelöscht. Starte Szene neu.");
+    }
+
+    public void ShowDeckSelection()
+    {
+        if (deckSelectionPanel == null || deckButtonContainer == null || deckButtonPrefab == null) 
+            return;
+        
+        deckSelectionPanel.SetActive(true);
+        
+        foreach (Transform child in deckButtonContainer)
+            Destroy(child.gameObject);
+        
+        var decks = ImageManager.Instance?.memoryDecks;
+        if (decks == null || decks.Count == 0) return;
+        
+        foreach (var deck in decks)
+        {
+            var btn = Instantiate(deckButtonPrefab, deckButtonContainer);
+            var text = btn.GetComponentInChildren<TMPro.TMP_Text>();
+            if (text != null)
+                text.text = $"{deck.deckName} ({deck.groups.Count} Gruppen)";
+            
+            string deckId = deck.deckId;
+            btn.GetComponent<UnityEngine.UI.Button>()?.onClick.AddListener(() => {
+                deckSelectionPanel.SetActive(false);
+                InitializeGame(deckId);
+            });
+        }
     }
 }
 
