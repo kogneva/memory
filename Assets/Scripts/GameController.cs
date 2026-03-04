@@ -51,6 +51,11 @@ public class GameController : MonoBehaviour
     public int DefaultGroupSize => defaultGroupSize;
     public int DefaultRequiredForMatch => defaultRequiredForMatch;
 
+    // Aktuelle Spielkonfiguration (wird aus Deck oder Defaults geladen)
+    private int currentGroupCount;
+    private int currentGroupSize;
+    private int currentRequiredForMatch;
+
     private void Awake()
     {
         if (Instance == null)
@@ -83,6 +88,7 @@ public class GameController : MonoBehaviour
         if (ImageManager.Instance == null)
         {
             Debug.LogError("ImageManager.Instance ist null!");
+            LoadGameConfigFromDefaults();
             SetupCardImages();
             return;
         }
@@ -106,11 +112,73 @@ public class GameController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Lädt die Spielkonfiguration in folgender Priorität:
+    /// 1. Aus dem ausgewählten Deck des Spielers
+    /// 2. Aus irgendeinem vorhandenen Deck
+    /// 3. Aus den Default-Werten
+    /// </summary>
+    void LoadGameConfig()
+    {
+        ImageManager imageManager = ImageManager.Instance;
+        
+        if (imageManager == null)
+        {
+            LoadGameConfigFromDefaults();
+            return;
+        }
+
+        // 1. Priorität: Ausgewähltes Deck
+        var selectedDeck = imageManager.GetSelectedDeck();
+        if (selectedDeck != null && selectedDeck.groups?.Count > 0)
+        {
+            LoadGameConfigFromDeck(selectedDeck, "ausgewähltes Deck");
+            return;
+        }
+
+        // 2. Priorität: Irgendein vorhandenes Deck
+        if (imageManager.memoryDecks?.Count > 0)
+        {
+            var anyDeck = imageManager.memoryDecks[0];
+            if (anyDeck.groups?.Count > 0)
+            {
+                LoadGameConfigFromDeck(anyDeck, "erstes verfügbares Deck");
+                return;
+            }
+        }
+
+        // 3. Priorität: Default-Werte
+        LoadGameConfigFromDefaults();
+    }
+
+    void LoadGameConfigFromDeck(ImageManager.MemoryDeck deck, string source)
+    {
+        currentGroupCount = deck.GroupCount;
+        currentGroupSize = deck.groupSize;
+        currentRequiredForMatch = deck.requiredForMatch;
+        
+        Debug.Log($"Spielkonfiguration geladen aus {source} '{deck.deckName}': " +
+                  $"GroupCount={currentGroupCount}, GroupSize={currentGroupSize}, RequiredForMatch={currentRequiredForMatch}");
+    }
+
+    void LoadGameConfigFromDefaults()
+    {
+        currentGroupCount = defaultGroupCount;
+        currentGroupSize = defaultGroupSize;
+        currentRequiredForMatch = defaultRequiredForMatch;
+        
+        Debug.Log($"Spielkonfiguration aus Default-Werten: " +
+                  $"GroupCount={currentGroupCount}, GroupSize={currentGroupSize}, RequiredForMatch={currentRequiredForMatch}");
+    }
+
     void CreateAndStartAutoDeck()
     {
+        // Lade Konfiguration bevor das Auto-Deck erstellt wird
+        LoadGameConfig();
+        
         RemoveAutoDecks();
         string newDeckId = ImageManager.Instance.CreateDefaultDeck(
-            defaultGroupCount, defaultGroupSize, defaultRequiredForMatch, "AutoDefaultDeck");
+            currentGroupCount, currentGroupSize, currentRequiredForMatch, "AutoDefaultDeck");
         ImageManager.Instance.SetSelectedDeck(newDeckId);
         InitializeGame(newDeckId);
     }
@@ -156,6 +224,9 @@ public class GameController : MonoBehaviour
             return;
         }
 
+        // Lade Konfiguration aus dem aktuellen Deck
+        LoadGameConfigFromDeck(currentDeck, "initialisiertes Deck");
+
         LogCurrentDeck();
 
         matchesFound = 0;
@@ -189,14 +260,14 @@ public class GameController : MonoBehaviour
             int cardsCount = cards.Count;
             if (cardsCount <= 0) return;
 
-            int groupsNeeded = cardsCount / defaultGroupSize;
+            int groupsNeeded = cardsCount / currentGroupSize;
             int cardIdx = 0;
 
             for (int g = 0; g < groupsNeeded; g++)
             {
                 Sprite s = imageManager?.GetDefaultSpriteById(g);
 
-                for (int m = 0; m < defaultGroupSize && cardIdx < cardsCount; m++)
+                for (int m = 0; m < currentGroupSize && cardIdx < cardsCount; m++)
                 {
                     Card card = cards[cardIdx];
                     card.groupId = g.ToString();
@@ -212,35 +283,36 @@ public class GameController : MonoBehaviour
 
         foreach (ImageManager.DeckGroup deckGroup in currentDeck.groups)
         {
-            Sprite groupSprite = null;
-            string groupSourceDesc = "";
-
-            if (deckGroup.imageIds != null && deckGroup.imageIds.Count > 0)
-            {
-                string imageId = deckGroup.imageIds[0];
-                groupSprite = imageManager.LoadPoolImageSprite(imageId);
-                groupSourceDesc = $"pool:{imageId}";
-
-                if (groupSprite == null)
-                {
-                    Debug.LogWarning($"Sprite für Bild {imageId} konnte nicht geladen werden - verwende Default");
-                    groupSprite = imageManager?.GetDefaultSpriteById(groupIndex);
-                    groupSourceDesc += ", fallback";
-                }
-            }
-            else
-            {
-                groupSprite = imageManager?.GetDefaultSpriteById(groupIndex);
-                groupSourceDesc = $"group-default(groupIndex {groupIndex})";
-            }
-
             for (int i = 0; i < deckGroup.groupSize && cardIndex < cards.Count; i++)
             {
                 Card card = cards[cardIndex];
                 card.groupId = deckGroup.groupId;
-                card.SetFrontSprite(groupSprite);
+                
+                Sprite cardSprite = null;
+                string sourceDesc = "";
 
-                assignmentLog.AppendLine($"Card {card.gameObject.name}: group={card.groupId}, source={groupSourceDesc}, sprite={(groupSprite != null ? groupSprite.name : "null")}");
+                string imageId = currentDeck.GetImageIdForCard(deckGroup, i);
+                
+                if (!string.IsNullOrEmpty(imageId))
+                {
+                    cardSprite = imageManager.LoadPoolImageSprite(imageId);
+                    sourceDesc = $"pool:{imageId}";
+
+                    if (cardSprite == null)
+                    {
+                        Debug.LogWarning($"Sprite für Bild {imageId} konnte nicht geladen werden - verwende Default");
+                        cardSprite = imageManager?.GetDefaultSpriteById(groupIndex);
+                        sourceDesc += ", fallback";
+                    }
+                }
+                else
+                {
+                    cardSprite = imageManager?.GetDefaultSpriteById(groupIndex);
+                    sourceDesc = $"group-default(groupIndex {groupIndex})";
+                }
+
+                card.SetFrontSprite(cardSprite);
+                assignmentLog.AppendLine($"Card {card.gameObject.name}: group={card.groupId}, source={sourceDesc}, sprite={(cardSprite != null ? cardSprite.name : "null")}");
 
                 cardIndex++;
             }
@@ -381,34 +453,6 @@ public class GameController : MonoBehaviour
         PlayerPrefs.DeleteKey("MEMORY_DECKS");
         PlayerPrefs.Save();
         Debug.Log("Alle gespeicherten Decks wurden gelöscht. Starte Szene neu.");
-    }
-
-    public void ShowDeckSelection()
-    {
-        if (deckSelectionPanel == null || deckButtonContainer == null || deckButtonPrefab == null) 
-            return;
-        
-        deckSelectionPanel.SetActive(true);
-        
-        foreach (Transform child in deckButtonContainer)
-            Destroy(child.gameObject);
-        
-        var decks = ImageManager.Instance?.memoryDecks;
-        if (decks == null || decks.Count == 0) return;
-        
-        foreach (var deck in decks)
-        {
-            var btn = Instantiate(deckButtonPrefab, deckButtonContainer);
-            var text = btn.GetComponentInChildren<TMPro.TMP_Text>();
-            if (text != null)
-                text.text = $"{deck.deckName} ({deck.groups.Count} Gruppen)";
-            
-            string deckId = deck.deckId;
-            btn.GetComponent<UnityEngine.UI.Button>()?.onClick.AddListener(() => {
-                deckSelectionPanel.SetActive(false);
-                InitializeGame(deckId);
-            });
-        }
     }
 }
 

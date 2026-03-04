@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro; 
 using System.Collections.Generic;
 
@@ -17,7 +18,7 @@ public class DeckBuilderUI : MonoBehaviour
     public TMP_Text errorText;                     
 
     [Header("Assignment Panel - Display")]
-    public TMP_Text progressText;                  
+    public TMP_Text progressText;                 
     public Slider progressBar;
     public TMP_Text groupInfoText;                 
 
@@ -31,6 +32,11 @@ public class DeckBuilderUI : MonoBehaviour
     [Header("Panels")]
     public GameObject configPanel;
     public GameObject assignmentPanel;
+    public GameObject mainMenuPanel;
+    public GameObject deckConfigMenu; // NEU: DeckConfigMenu Panel
+
+    [Header("Buttons")]
+    public Button nextButton;
 
     private DeckBuilder deckBuilder;
     private bool isClassicMode = true;
@@ -57,6 +63,9 @@ public class DeckBuilderUI : MonoBehaviour
 
         if (useSameImagesToggle != null)
         {
+            // Toggle-Startwert mit isClassicMode synchronisieren
+            isClassicMode = useSameImagesToggle.isOn;
+            
             useSameImagesToggle.onValueChanged.AddListener((value) => {
                 isClassicMode = value;
                 UpdateModeDescription();
@@ -156,16 +165,6 @@ public class DeckBuilderUI : MonoBehaviour
         }
     }
 
-    public void OnCancelClick()
-    {
-        if (deckBuilder != null)
-        {
-            deckBuilder.CancelDeckCreation();
-        }
-        ShowConfigPanel();
-        if (errorText != null) errorText.text = "";
-    }
-
     void UpdateProgressBar()
     {
         if (deckBuilder == null)
@@ -211,8 +210,23 @@ public class DeckBuilderUI : MonoBehaviour
             }
         }
 
+        // Button-Text basierend auf aktueller Gruppe aktualisieren
+        UpdateNextButtonText(currentIndex, config.groupCount);
+
         DisplayAvailableImages();
         DisplaySelectedImages();
+    }
+
+    void UpdateNextButtonText(int currentIndex, int totalGroups)
+    {
+        if (nextButton == null) return;
+        
+        TMP_Text buttonText = nextButton.GetComponentInChildren<TMP_Text>();
+        if (buttonText != null)
+        {
+            bool isLastGroup = currentIndex >= totalGroups - 1;
+            buttonText.text = isLastGroup ? "Abschließen" : "Weiter";
+        }
     }
 
     void DisplayAvailableImages()
@@ -308,8 +322,8 @@ public class DeckBuilderUI : MonoBehaviour
         if (deckBuilder == null) return;
         
         var config = deckBuilder.GetCurrentConfig();
-        if (config == null) return;  // NEU: Null-Check
-    
+        if (config == null) return;
+
         if (deckBuilder.IsCurrentGroupComplete())
         {
             if (deckBuilder.GetCurrentGroupIndex() >= config.groupCount - 1)
@@ -334,7 +348,31 @@ public class DeckBuilderUI : MonoBehaviour
         if (deckId != null)
         {
             Debug.Log($"Deck erstellt: {deckId}");
-            ShowConfigPanel();
+            
+            // DeckBuilder-Panels zurücksetzen für nächste Verwendung
+            if (configPanel != null) configPanel.SetActive(true);
+            if (assignmentPanel != null) assignmentPanel.SetActive(false);
+            
+            // WICHTIG: Erst Hauptmenü aktivieren, dann DeckConfigMenu deaktivieren
+            if (mainMenuPanel != null)
+            {
+                Debug.Log("MainMenuPanel wird aktiviert");
+                mainMenuPanel.SetActive(true);
+            }
+            else
+            {
+                Debug.LogError("mainMenuPanel ist nicht zugewiesen!");
+            }
+            
+            // NUR das DeckConfigMenu deaktivieren (nicht transform.parent!)
+            if (deckConfigMenu != null)
+            {
+                deckConfigMenu.SetActive(false);
+            }
+            else
+            {
+                Debug.LogError("deckConfigMenu ist nicht zugewiesen!");
+            }
         }
     }
 }

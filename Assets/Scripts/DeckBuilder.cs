@@ -54,7 +54,7 @@ public class DeckBuilder : MonoBehaviour
         currentState = BuilderState.ImageAssignment;
         currentGroupIndex = 0;
 
-        Debug.Log($"Deck-Konfiguration gestartet: {deckName} mit {groupCount} Gruppen à {groupSize} Karten (requiredForMatch={requiredForMatch})");
+            Debug.Log($"Deck-Konfiguration gestartet: {deckName} mit {groupCount} Gruppen à {groupSize} Karten (requiredForMatch={requiredForMatch})");
         return true;
     }
 
@@ -79,9 +79,7 @@ public class DeckBuilder : MonoBehaviour
         }
 
         List<string> currentGroupImages = imageAssignments[currentGroupIndex];
-
-        // Im klassischen Modus nur 1 Bild pro Gruppe erlauben
-        int maxImagesPerGroup = currentConfig.useSameImages ? 1 : currentConfig.groupSize;
+        int maxImagesPerGroup = currentConfig.RequiredImagesPerGroup;
 
         if (currentGroupImages.Count >= maxImagesPerGroup)
         {
@@ -154,9 +152,7 @@ public class DeckBuilder : MonoBehaviour
             return false;
         }
 
-        // Im klassischen Modus nur 1 Bild pro Gruppe erforderlich
-        int requiredImages = currentConfig.useSameImages ? 1 : currentConfig.groupSize;
-        return imageAssignments[currentGroupIndex].Count >= requiredImages;
+        return imageAssignments[currentGroupIndex].Count >= currentConfig.RequiredImagesPerGroup;
     }
 
     public bool NextGroup()
@@ -194,12 +190,8 @@ public class DeckBuilder : MonoBehaviour
 
     public List<ImageManager.PoolImage> GetAvailableImages()
     {
-        if (currentConfig.useSameImages)
-        {
-            return ImageManager.Instance.imagePool;
-        }
-
         HashSet<string> usedImages = new HashSet<string>();
+        
         foreach (var kvp in imageAssignments)
         {
             foreach (string imageId in kvp.Value)
@@ -253,8 +245,7 @@ public class DeckBuilder : MonoBehaviour
             return null;
         }
 
-        // Im klassischen Modus nur 1 Bild pro Gruppe erforderlich
-        int requiredImages = currentConfig.useSameImages ? 1 : currentConfig.groupSize;
+        int requiredImages = currentConfig.RequiredImagesPerGroup;
 
         for (int i = 0; i < currentConfig.groupCount; i++)
         {
@@ -316,8 +307,7 @@ public class DeckBuilder : MonoBehaviour
             return 0f;
         }
 
-        // Im klassischen Modus nur 1 Bild pro Gruppe erforderlich
-        int requiredImages = currentConfig.useSameImages ? 1 : currentConfig.groupSize;
+        int requiredImages = currentConfig.RequiredImagesPerGroup;
 
         int completeGroups = 0;
         for (int i = 0; i < currentConfig.groupCount; i++)

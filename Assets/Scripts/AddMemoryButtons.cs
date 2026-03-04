@@ -13,11 +13,11 @@ public class AddMemoryButtons : MonoBehaviour
     private GameController gameController;
 
     [Header("Configuration")]
-    [Tooltip("Anzahl der Gruppen (0 = Fallback verwenden)")]
+    [Tooltip("Anzahl der Gruppen (nur Fallback wenn kein Deck)")]
     [SerializeField]
     private int fallbackGroupCount = 4;
 
-    [Tooltip("Karten pro Gruppe")]
+    [Tooltip("Karten pro Gruppe (nur Fallback wenn kein Deck)")]
     [SerializeField]
     private int fallbackGroupSize = 2;
 
@@ -26,6 +26,20 @@ public class AddMemoryButtons : MonoBehaviour
     {
         get
         {
+            if (ImageManager.Instance != null)
+            {
+                Debug.Log("AddMemoryButtons: Image manager gefunden");
+                var selectedDeck = ImageManager.Instance.GetSelectedDeck();
+                if (selectedDeck != null)
+                    return selectedDeck.GroupCount;
+                
+                if (ImageManager.Instance.memoryDecks?.Count > 0)
+                    return ImageManager.Instance.memoryDecks[0].GroupCount;
+            }
+
+            if (ImageManager.Instance == null)
+            {
+                Debug.Log("keine image manager instance in addmemorybuttons");}
             int count = gameController != null ? gameController.DefaultGroupCount : 0;
             return count > 0 ? count : fallbackGroupCount;
         }
@@ -36,6 +50,18 @@ public class AddMemoryButtons : MonoBehaviour
     {
         get
         {
+            if (ImageManager.Instance != null)
+            {
+                var selectedDeck = ImageManager.Instance.GetSelectedDeck();
+                if (selectedDeck != null){
+                    Debug.Log(
+                        $"AddMemoryButtons: Selected deck: '{selectedDeck.deckName}' with group size {selectedDeck.groupSize}");
+                        return selectedDeck.groupSize;}
+
+            if (ImageManager.Instance.memoryDecks?.Count > 0)
+                    return ImageManager.Instance.memoryDecks[0].groupSize;
+            }
+
             int size = gameController != null ? gameController.DefaultGroupSize : 0;
             return size > 0 ? size : fallbackGroupSize;
         }
@@ -49,7 +75,11 @@ public class AddMemoryButtons : MonoBehaviour
         {
             gameController = FindAnyObjectByType<GameController>();
         }
+    }
 
+    private void Start()
+    {
+        // Verzögere die Generierung auf Start(), damit ImageManager.Instance initialisiert ist
         if (Application.isPlaying)
         {
             GenerateButtons();

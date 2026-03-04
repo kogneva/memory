@@ -1113,6 +1113,7 @@ GameObject:
   - component: {fileID: 1592388897}
   - component: {fileID: 1592388896}
   - component: {fileID: 1592388898}
+  - component: {fileID: 1592388899}
   m_Layer: 5
   m_Name: MemoryField
   m_TagString: Untagged
@@ -1199,8 +1200,21 @@ MonoBehaviour:
   m_StartAxis: 0
   m_CellSize: {x: 100, y: 100}
   m_Spacing: {x: 10, y: 10}
-  m_Constraint: 0
-  m_ConstraintCount: 2
+  m_Constraint: 1
+  m_ConstraintCount: 1
+--- !u!114 &1592388899
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1592388894}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f279dbabe5d76dd4b9ab5c8ec021e495, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  autoUpdate: 1
 --- !u!1 &1692010214
 GameObject:
   m_ObjectHideFlags: 0
@@ -1398,57 +1412,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   backSprite: {fileID: 0}
   gameOverPanel: {fileID: 890391754}
+  deckSelectionPanel: {fileID: 0}
+  deckButtonContainer: {fileID: 0}
+  deckButtonPrefab: {fileID: 0}
   cards: []
   defaultGroupCount: 4
   defaultGroupSize: 2
   defaultRequiredForMatch: 2
-  alwaysRecreateAutoDeck: 0
---- !u!1 &1734500737
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1734500739}
-  - component: {fileID: 1734500738}
-  m_Layer: 0
-  m_Name: ImageManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1734500738
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1734500737}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 80248c3211e2b4d44ba35fc6d477726b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  imagePool: []
-  memoryDecks: []
---- !u!4 &1734500739
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1734500737}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1788127106
 GameObject:
   m_ObjectHideFlags: 0
@@ -1729,4 +1699,3 @@ SceneRoots:
   - {fileID: 674728030}
   - {fileID: 690392763}
   - {fileID: 1712785698}
-  - {fileID: 1734500739}

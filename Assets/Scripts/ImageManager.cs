@@ -33,7 +33,36 @@ public class ImageManager : MonoBehaviour
     {
         public string deckId;
         public string deckName;
+        public int groupSize = 2;
+        public int requiredForMatch = 2;
+        public bool useSameImages = false; 
         public List<DeckGroup> groups = new List<DeckGroup>();
+        
+        // Convenience-Property für GroupCount
+        public int GroupCount => groups?.Count ?? 0;
+        
+        // Convenience-Property für TotalCards
+        public int TotalCards => GroupCount * groupSize;
+
+        /// <summary>
+        /// Gibt die Image-ID für eine bestimmte Karte in einer Gruppe zurück.
+        /// Berücksichtigt automatisch useSameImages.
+        /// </summary>
+        /// <param name="group">Die Gruppe der Karte</param>
+        /// <param name="cardIndex">Index der Karte innerhalb der Gruppe</param>
+        public string GetImageIdForCard(DeckGroup group, int cardIndex)
+        {
+            if (group?.imageIds == null || group.imageIds.Count == 0)
+                return null;
+            
+            if (useSameImages)
+                return group.imageIds[0];
+                
+            if (cardIndex < group.imageIds.Count)
+                return group.imageIds[cardIndex];
+                
+            return group.imageIds[group.imageIds.Count - 1];
+        }
     }
 
     [System.Serializable]
@@ -53,6 +82,10 @@ public class ImageManager : MonoBehaviour
             this.requiredForMatch = requiredForMatch;
             this.useSameImages = useSameImages;
         }
+
+      
+        public int RequiredImagesPerGroup => useSameImages ? 1 : groupSize;
+        public int TotalRequiredImages => useSameImages ? groupCount : groupCount * groupSize;
     }
 
     public class DeckValidationResult
@@ -130,11 +163,13 @@ public class ImageManager : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             Sprite sprite = defaultSprites[i];
-            string newId = Guid.NewGuid().ToString();
+            
+            // Stabile ID basierend auf Sprite-Namen statt zufälliger GUID
+            string stableId = $"default_{sprite.name}";
             
             PoolImage poolImage = new PoolImage
             {
-                imageId = newId,
+                imageId = stableId,
                 imagePath = "", 
                 imageName = sprite.name,
                 sprite = sprite, 
@@ -434,7 +469,7 @@ public class ImageManager : MonoBehaviour
             return new DeckValidationResult(false, 
                 $"requiredForMatch ({config.requiredForMatch}) muss zwischen 2 und groupSize ({config.groupSize}) liegen");
 
-        int requiredImages = config.useSameImages ? config.groupCount : config.groupCount * config.groupSize;
+        int requiredImages = config.TotalRequiredImages;
         int availableImages = imagePool?.Count ?? 0;
 
         // Wenn Pool leer ist, automatisch Default-Sprites laden
@@ -472,6 +507,9 @@ public class ImageManager : MonoBehaviour
         {
             deckId = deckId,
             deckName = config.deckName,
+            groupSize = config.groupSize,
+            requiredForMatch = config.requiredForMatch,
+            useSameImages = config.useSameImages,  // <-- Diese Zeile hinzufügen
             groups = new List<DeckGroup>()
         };
 
@@ -505,7 +543,7 @@ public class ImageManager : MonoBehaviour
         memoryDecks.Add(deck);
         SaveLibrary();
         
-        Debug.Log($"Deck '{config.deckName}' erstellt mit {config.groupCount} Gruppen (je {config.requiredForMatch} Karten)");
+        Debug.Log($"Deck '{config.deckName}' erstellt mit {config.groupCount} Gruppen (je {config.groupSize} Karten, {config.requiredForMatch} für Match)");
         return deckId;
     }
 
@@ -540,9 +578,7 @@ public class ImageManager : MonoBehaviour
     private bool ValidateImageAssignments(SimplifiedDeckConfig config, Dictionary<int, List<string>> imageAssignments)
     {
         HashSet<string> usedImages = new HashSet<string>();
-
-        // Im klassischen Modus nur 1 Bild pro Gruppe erforderlich
-        int requiredImagesPerGroup = config.useSameImages ? 1 : config.groupSize;
+        int requiredImagesPerGroup = config.RequiredImagesPerGroup;
 
         for (int i = 0; i < config.groupCount; i++)
         {
