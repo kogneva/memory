@@ -1215,6 +1215,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   autoUpdate: 1
+  minCellSize: {x: 40, y: 40}
+  maxCellSize: {x: 150, y: 150}
+  cardAspectRatio: 1
+  padding:
+    m_Left: 10
+    m_Right: 10
+    m_Top: 10
+    m_Bottom: 10
+  spacing: {x: 5, y: 5}
 --- !u!1 &1692010214
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,88 +1,202 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(GridLayoutGroup))]
 public class GridLayoutOptimizer : MonoBehaviour
 {
     private GridLayoutGroup gridLayout;
+    private RectTransform rectTransform;
 
-    [Tooltip("Automatisch bei �nderungen der Kinder aktualisieren")]
+    [Tooltip("Automatisch bei Änderungen der Kinder aktualisieren")]
     public bool autoUpdate = true;
+
+    [Header("Cell Size Settings")]
+    [Tooltip("Minimale Zellgröße (Breite und Höhe)")]
+    public Vector2 minCellSize = new Vector2(50f, 50f);
+
+    [Tooltip("Maximale Zellgröße (Breite und Höhe)")]
+    public Vector2 maxCellSize = new Vector2(200f, 200f);
+
+    [Tooltip("Seitenverhältnis der Karten (Breite/Höhe). 1 = quadratisch")]
+    public float cardAspectRatio = 1f;
+
+    [Header("Spacing Settings")]
+    [Tooltip("Padding: Links, Rechts, Oben, Unten")]
+    public int paddingLeft = 10;
+    public int paddingRight = 10;
+    public int paddingTop = 10;
+    public int paddingBottom = 10;
+
+    [Tooltip("Abstand zwischen den Karten")]
+    public Vector2 spacing = new Vector2(10f, 10f);
+
+    private RectOffset padding;
 
     void Awake()
     {
         gridLayout = GetComponent<GridLayoutGroup>();
+        rectTransform = GetComponent<RectTransform>();
+        padding = new RectOffset(paddingLeft, paddingRight, paddingTop, paddingBottom);
     }
 
     void Start()
     {
-        UpdateGridColumns();
+        // Warte einen Frame, damit das Layout korrekt initialisiert ist
+        StartCoroutine(DelayedUpdate());
+    }
+
+    private System.Collections.IEnumerator DelayedUpdate()
+    {
+        yield return null;
+        UpdateGridLayout();
     }
 
     void OnTransformChildrenChanged()
     {
         if (autoUpdate)
         {
-            UpdateGridColumns();
+            UpdateGridLayout();
+        }
+    }
+
+    void OnRectTransformDimensionsChange()
+    {
+        if (autoUpdate && gridLayout != null)
+        {
+            UpdateGridLayout();
         }
     }
 
     /// <summary>
-    /// Berechnet und setzt die optimale Spaltenanzahl f�r ein m�glichst quadratisches Grid.
+    /// Berechnet und setzt das optimale Grid-Layout, damit alle Karten auf den Bildschirm passen.
     /// </summary>
-    public void UpdateGridColumns()
+    public void UpdateGridLayout()
     {
         int childCount = GetActiveChildCount();
-        
+
         if (childCount == 0)
             return;
 
-        int columns = CalculateOptimalColumns(childCount);
-        
-        gridLayout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-        gridLayout.constraintCount = columns;
+        // Padding aus Inspector-Werten aktualisieren
+        padding = new RectOffset(paddingLeft, paddingRight, paddingTop, paddingBottom);
 
-        int rows = Mathf.CeilToInt((float)childCount / columns);
-        Debug.Log($"GridLayoutOptimizer: {childCount} Karten -> {columns} Spalten x {rows} Zeilen");
+        // Padding anwenden
+        gridLayout.padding = padding;
+        gridLayout.spacing = spacing;
+
+        // Verfügbare Größe berechnen
+        Vector2 availableSize = GetAvailableSize();
+
+        // Optimales Layout berechnen
+        LayoutResult result = CalculateOptimalLayout(childCount, availableSize);
+
+        // Layout anwenden
+        gridLayout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        gridLayout.constraintCount = result.columns;
+        gridLayout.cellSize = result.cellSize;
+
+        Debug.Log($"GridLayoutOptimizer: {childCount} Karten -> {result.columns}x{result.rows}, " +
+                  $"Zellgröße: {result.cellSize.x:F1}x{result.cellSize.y:F1}, " +
+                  $"Verfügbar: {availableSize.x:F1}x{availableSize.y:F1}");
     }
 
     /// <summary>
-    /// Berechnet die optimale Spaltenanzahl f�r ein m�glichst quadratisches Grid.
-    /// Bevorzugt mehr Spalten als Zeilen (z.B. 5x4 statt 4x5).
+    /// Berechnet die verfügbare Größe für das Grid (abzüglich Padding).
     /// </summary>
-    private int CalculateOptimalColumns(int count)
+    private Vector2 GetAvailableSize()
+    {
+        Rect rect = rectTransform.rect;
+        float availableWidth = rect.width - paddingLeft - paddingRight;
+        float availableHeight = rect.height - paddingTop - paddingBottom;
+
+        return new Vector2(
+            Mathf.Max(availableWidth, 100f),
+            Mathf.Max(availableHeight, 100f)
+        );
+    }
+
+    /// <summary>
+    /// Berechnet das optimale Layout (Spalten, Zeilen, Zellgröße) für die gegebene Kartenanzahl.
+    /// </summary>
+    private LayoutResult CalculateOptimalLayout(int count, Vector2 availableSize)
     {
         if (count <= 0)
-            return 1;
+            return new LayoutResult { columns = 1, rows = 1, cellSize = maxCellSize };
 
-        // Quadratwurzel als Ausgangspunkt
-        int sqrt = Mathf.CeilToInt(Mathf.Sqrt(count));
+        LayoutResult bestResult = new LayoutResult();
+        float bestScore = float.MinValue;
 
-        // Suche die beste Spaltenanzahl nahe der Quadratwurzel
-        int bestColumns = sqrt;
-        int bestDifference = int.MaxValue;
+        // Probiere verschiedene Spaltenzahlen durch
+        int maxColumns = Mathf.Min(count, Mathf.CeilToInt(availableSize.x / minCellSize.x));
+        int minColumns = Mathf.Max(1, Mathf.CeilToInt(Mathf.Sqrt(count) * 0.5f));
 
-        // Pr�fe Werte um die Quadratwurzel herum
-        for (int cols = Mathf.Max(1, sqrt - 2); cols <= sqrt + 2; cols++)
+        for (int cols = minColumns; cols <= maxColumns; cols++)
         {
             int rows = Mathf.CeilToInt((float)count / cols);
-            int difference = Mathf.Abs(rows - cols);
 
-            // Bevorzuge Layouts mit weniger Differenz zwischen Zeilen und Spalten
-            // Bei gleicher Differenz: bevorzuge mehr Spalten (cols > bestColumns)
-            if (difference < bestDifference || 
-                (difference == bestDifference && cols > bestColumns))
+            // Berechne maximale Zellgröße für diese Konfiguration
+            float maxCellWidth = (availableSize.x - (cols - 1) * spacing.x) / cols;
+            float maxCellHeight = (availableSize.y - (rows - 1) * spacing.y) / rows;
+
+            // Wende Aspect Ratio an
+            float cellWidth, cellHeight;
+            if (cardAspectRatio >= 1f)
             {
-                bestDifference = difference;
-                bestColumns = cols;
+                // Breiter als hoch oder quadratisch
+                cellWidth = Mathf.Min(maxCellWidth, maxCellHeight * cardAspectRatio);
+                cellHeight = cellWidth / cardAspectRatio;
+            }
+            else
+            {
+                // Höher als breit
+                cellHeight = Mathf.Min(maxCellHeight, maxCellWidth / cardAspectRatio);
+                cellWidth = cellHeight * cardAspectRatio;
+            }
+
+            // Begrenze auf min/max Werte
+            cellWidth = Mathf.Clamp(cellWidth, minCellSize.x, maxCellSize.x);
+            cellHeight = Mathf.Clamp(cellHeight, minCellSize.y, maxCellSize.y);
+
+            // Prüfe, ob alle Karten passen
+            float totalWidth = cols * cellWidth + (cols - 1) * spacing.x;
+            float totalHeight = rows * cellHeight + (rows - 1) * spacing.y;
+
+            if (totalWidth > availableSize.x + 1f || totalHeight > availableSize.y + 1f)
+                continue;
+
+            // Bewertung: Größere Zellen und besseres Seitenverhältnis (rows ≈ cols) sind besser
+            float sizeScore = cellWidth * cellHeight;
+            float ratioScore = 1f / (1f + Mathf.Abs(rows - cols));
+            float fillScore = (totalWidth * totalHeight) / (availableSize.x * availableSize.y);
+
+            float score = sizeScore * 0.5f + ratioScore * 100f + fillScore * 50f;
+
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestResult = new LayoutResult
+                {
+                    columns = cols,
+                    rows = rows,
+                    cellSize = new Vector2(cellWidth, cellHeight)
+                };
             }
         }
 
-        return bestColumns;
+        // Fallback: Falls keine gültige Konfiguration gefunden wurde
+        if (bestResult.columns == 0)
+        {
+            int sqrt = Mathf.CeilToInt(Mathf.Sqrt(count));
+            bestResult.columns = sqrt;
+            bestResult.rows = Mathf.CeilToInt((float)count / sqrt);
+            bestResult.cellSize = minCellSize;
+        }
+
+        return bestResult;
     }
 
     /// <summary>
-    /// Z�hlt nur aktive Kind-Objekte.
+    /// Zählt nur aktive Kind-Objekte.
     /// </summary>
     private int GetActiveChildCount()
     {
@@ -96,10 +210,28 @@ public class GridLayoutOptimizer : MonoBehaviour
     }
 
     /// <summary>
-    /// Manuelle Aktualisierung von au�en aufrufen.
+    /// Manuelle Aktualisierung von außen aufrufen.
     /// </summary>
     public void ForceUpdate()
     {
-        UpdateGridColumns();
+        UpdateGridLayout();
+    }
+
+    /// <summary>
+    /// Hilfsmethode zum Einstellen der Konfiguration zur Laufzeit.
+    /// </summary>
+    public void Configure(Vector2 minSize, Vector2 maxSize, float aspectRatio)
+    {
+        minCellSize = minSize;
+        maxCellSize = maxSize;
+        cardAspectRatio = aspectRatio;
+        UpdateGridLayout();
+    }
+
+    private struct LayoutResult
+    {
+        public int columns;
+        public int rows;
+        public Vector2 cellSize;
     }
 }
