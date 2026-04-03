@@ -1,215 +1,458 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
+using System.Linq;
+using System.Text;
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
+/// <summary>
+/// Verwaltet das Memory-Spiel mit Decks, Gruppen und Karten
+/// </summary>
 public class GameController : MonoBehaviour
 {
+    public static GameController Instance { get; private set; }
 
     [SerializeField]
-    private Sprite backImage;
+    [Tooltip("Sprite für die Kartenrückseite")]
+    public Sprite backSprite;
 
+    [Header("UI")]
+    [Tooltip("Optional: Panel (oder GameObject), das die Game Over-Benutzeroberfläche enthält)")]
     [SerializeField]
-    public int pair_of = 2;
+    private GameObject gameOverPanel;
 
-    public Sprite[] memoryPictures;
-    public Sprite[] shuffeledPictures;
+    [Header("Deck Selection")]
+    [SerializeField] private GameObject deckSelectionPanel;
+    [SerializeField] private Transform deckButtonContainer;
+    [SerializeField] private GameObject deckButtonPrefab;
 
-    public List<Sprite> memoryCards = new List<Sprite>();
+    public List<Card> cards = new List<Card>();
+    
+    private ImageManager.MemoryDeck currentDeck;
+    private readonly List<Card> revealedCards = new List<Card>();
+    private bool checkingMatch;
+    private int matchesFound;
+    private int totalMatches;
 
-    public List<Button> btns = new List<Button>();
+    [Header("Auto Deck Generation")]
+    [Tooltip("Anzahl der Gruppen/Paare")]
+    [SerializeField]
+    private int defaultGroupCount = 4;
 
-    private bool firstGuess, secondGuess;
-    private string firstGuessCard, secondGuessCard;
-    private int countGuesses;
-    private int countCorrectGuesses;
-    private int countIncorrectGuesses;
-    private int gameGuesses;
-    private int firstGuessIndex;
-    private int secondGuessIndex;
-    //TODO: wie viele guesses pro karte
+    [Tooltip("Anzahl der Karten pro Gruppe (z.B. 2 für klassische Paare, 4 für Vierer-Gruppen)")]
+    [SerializeField]
+    private int defaultGroupSize = 2;
 
+    [Tooltip("Wie viele Karten müssen für einen Match aufgedeckt werden")]
+    [SerializeField]
+    private int defaultRequiredForMatch = 2;
 
+    public int DefaultGroupCount => defaultGroupCount;
+    public int DefaultGroupSize => defaultGroupSize;
+    public int DefaultRequiredForMatch => defaultRequiredForMatch;
+
+    // Aktuelle Spielkonfiguration (wird aus Deck oder Defaults geladen)
+    private int currentGroupCount;
+    private int currentGroupSize;
+    private int currentRequiredForMatch;
 
     private void Awake()
     {
-        memoryPictures = Resources.LoadAll<Sprite>("Sprites/diamond-pearl"); //path
-        //shuffeledPictures = ShuffleSprites(memoryPictures));//todo: cards need to be shuffeled
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
 
+        if (backSprite == null)
+        {
+            backSprite = Resources.Load<Sprite>("Sprites/photo_5389104988137058662_y");
+            if (backSprite == null)
+            {
+                Debug.LogWarning("Couldn't load default BackSprite");
+            }
+        }
+
+        if (gameOverPanel != null)
+            gameOverPanel.SetActive(false);
     }
+
     void Start()
     {
-        GetButtons();
-        AddListeners();
-        AddPictures();
-        Shuffle(memoryCards);
-        gameGuesses=memoryCards.Count/2;
+        GetCards();
+
+        if (ImageManager.Instance == null)
+        {
+            Debug.LogError("ImageManager.Instance ist null!");
+            LoadGameConfigFromDefaults();
+            SetupCardImages();
+            return;
+        }
+
+        var selectedDeck = ImageManager.Instance.GetSelectedDeck();
         
+        if (selectedDeck != null)
+        {
+            Debug.Log($"Starte mit ausgewähltem Deck: {selectedDeck.deckName}");
+            InitializeGame(selectedDeck.deckId);
+        }
+        else if (ImageManager.Instance.memoryDecks?.Count > 0)
+        {
+            var firstDeck = ImageManager.Instance.memoryDecks[0];
+            ImageManager.Instance.SetSelectedDeck(firstDeck.deckId);
+            InitializeGame(firstDeck.deckId);
+        }
+        else
+        {
+            CreateAndStartAutoDeck();
+        }
     }
 
-    void GetButtons()
+    /// <summary>
+    /// Lädt die Spielkonfiguration in folgender Priorität:
+    /// 1. Aus dem ausgewählten Deck des Spielers
+    /// 2. Aus irgendeinem vorhandenen Deck
+    /// 3. Aus den Default-Werten
+    /// </summary>
+    void LoadGameConfig()
     {
+        ImageManager imageManager = ImageManager.Instance;
+        
+        if (imageManager == null)
+        {
+            LoadGameConfigFromDefaults();
+            return;
+        }
+
+        // 1. Priorität: Ausgewähltes Deck
+        var selectedDeck = imageManager.GetSelectedDeck();
+        if (selectedDeck != null && selectedDeck.groups?.Count > 0)
+        {
+            LoadGameConfigFromDeck(selectedDeck, "ausgewähltes Deck");
+            return;
+        }
+
+        // 2. Priorität: Irgendein vorhandenes Deck
+        if (imageManager.memoryDecks?.Count > 0)
+        {
+            var anyDeck = imageManager.memoryDecks[0];
+            if (anyDeck.groups?.Count > 0)
+            {
+                LoadGameConfigFromDeck(anyDeck, "erstes verfügbares Deck");
+                return;
+            }
+        }
+
+        // 3. Priorität: Default-Werte
+        LoadGameConfigFromDefaults();
+    }
+
+    void LoadGameConfigFromDeck(ImageManager.MemoryDeck deck, string source)
+    {
+        currentGroupCount = deck.GroupCount;
+        currentGroupSize = deck.groupSize;
+        currentRequiredForMatch = deck.requiredForMatch;
+        
+        Debug.Log($"Spielkonfiguration geladen aus {source} '{deck.deckName}': " +
+                  $"GroupCount={currentGroupCount}, GroupSize={currentGroupSize}, RequiredForMatch={currentRequiredForMatch}");
+    }
+
+    void LoadGameConfigFromDefaults()
+    {
+        currentGroupCount = defaultGroupCount;
+        currentGroupSize = defaultGroupSize;
+        currentRequiredForMatch = defaultRequiredForMatch;
+        
+        Debug.Log($"Spielkonfiguration aus Default-Werten: " +
+                  $"GroupCount={currentGroupCount}, GroupSize={currentGroupSize}, RequiredForMatch={currentRequiredForMatch}");
+    }
+
+    void CreateAndStartAutoDeck()
+    {
+        // Lade Konfiguration bevor das Auto-Deck erstellt wird
+        LoadGameConfig();
+        
+        RemoveAutoDecks();
+        string newDeckId = ImageManager.Instance.CreateDefaultDeck(
+            currentGroupCount, currentGroupSize, currentRequiredForMatch, "AutoDefaultDeck");
+        ImageManager.Instance.SetSelectedDeck(newDeckId);
+        InitializeGame(newDeckId);
+    }
+
+    void RemoveAutoDecks()
+    {
+        if (ImageManager.Instance.memoryDecks == null)
+            return;
+
+        var autoDecks = ImageManager.Instance.memoryDecks
+            .Where(d => d.deckName == "AutoDefaultDeck")
+            .ToList();
+
+        foreach (var deck in autoDecks)
+        {
+            ImageManager.Instance.RemoveDeck(deck.deckId);
+            Debug.Log($"Altes Auto-Deck entfernt: {deck.deckId}");
+        }
+    }
+
+    void GetCards()
+    {
+        cards.Clear();
         GameObject[] objects = GameObject.FindGameObjectsWithTag("MemoryCard");
-        for (int i = 0; i < objects.Length; i++)
+        foreach (GameObject obj in objects)
         {
-            // add image for each button 
-            btns.Add(objects[i].GetComponent<Button>());
-            btns[i].image.sprite = backImage;
-        }
-    }
-
-    void AddListeners()
-    {
-        foreach (Button btn in btns)
-        {
-            btn.onClick.AddListener(() => PickCard());
-        }
-    }
-
-    void AddPictures()
-    {
-        int index = 0;
-        for (int i = 0; i < btns.Count; i++)
-        {
-            if (index == btns.Count / pair_of)
+            Card card = obj.GetComponent<Card>();
+            if (card != null)
             {
-                index = 0;
+                cards.Add(card);
+            }
+        }
+    }
+
+    public void InitializeGame(string deckId)
+    {
+        ImageManager imageManager = ImageManager.Instance;
+        currentDeck = imageManager.GetDeck(deckId);
+
+        if (currentDeck == null)
+        {
+            Debug.LogError($"Deck mit ID {deckId} nicht gefunden");
+            return;
+        }
+
+        // Lade Konfiguration aus dem aktuellen Deck
+        LoadGameConfigFromDeck(currentDeck, "initialisiertes Deck");
+
+        LogCurrentDeck();
+
+        matchesFound = 0;
+        revealedCards.Clear();
+        checkingMatch = false;
+
+        SetupCardImages();
+        CalculateTotalMatches();
+    }
+
+    void CalculateTotalMatches()
+    {
+        totalMatches = currentDeck.groups.Count;
+    }
+
+    void SetupCardImages()
+    {
+        ImageManager imageManager = ImageManager.Instance;
+        int cardIndex = 0;
+
+        StringBuilder assignmentLog = new StringBuilder();
+        int groupIndex = 0;
+
+        if (cards != null && cards.Count > 1)
+        {
+            ShuffleCards();
+        }
+
+        if (currentDeck == null)
+        {
+            int cardsCount = cards.Count;
+            if (cardsCount <= 0) return;
+
+            int groupsNeeded = cardsCount / currentGroupSize;
+            int cardIdx = 0;
+
+            for (int g = 0; g < groupsNeeded; g++)
+            {
+                Sprite s = imageManager?.GetDefaultSpriteById(g);
+
+                for (int m = 0; m < currentGroupSize && cardIdx < cardsCount; m++)
+                {
+                    Card card = cards[cardIdx];
+                    card.groupId = g.ToString();
+                    card.SetFrontSprite(s);
+                    assignmentLog.AppendLine($"Card {card.gameObject.name}: group={card.groupId}, sprite={(s != null ? s.name : "null")}");
+                    cardIdx++;
+                }
             }
 
-            memoryCards.Add(memoryPictures[index]);
-            index++;
+            Debug.Log(assignmentLog.ToString());
+            return;
         }
 
+        foreach (ImageManager.DeckGroup deckGroup in currentDeck.groups)
+        {
+            for (int i = 0; i < deckGroup.groupSize && cardIndex < cards.Count; i++)
+            {
+                Card card = cards[cardIndex];
+                card.groupId = deckGroup.groupId;
+                
+                Sprite cardSprite = null;
+                string sourceDesc = "";
+
+                string imageId = currentDeck.GetImageIdForCard(deckGroup, i);
+                
+                if (!string.IsNullOrEmpty(imageId))
+                {
+                    cardSprite = imageManager.LoadPoolImageSprite(imageId);
+                    sourceDesc = $"pool:{imageId}";
+
+                    if (cardSprite == null)
+                    {
+                        Debug.LogWarning($"Sprite für Bild {imageId} konnte nicht geladen werden - verwende Default");
+                        cardSprite = imageManager?.GetDefaultSpriteById(groupIndex);
+                        sourceDesc += ", fallback";
+                    }
+                }
+                else
+                {
+                    cardSprite = imageManager?.GetDefaultSpriteById(groupIndex);
+                    sourceDesc = $"group-default(groupIndex {groupIndex})";
+                }
+
+                card.SetFrontSprite(cardSprite);
+                assignmentLog.AppendLine($"Card {card.gameObject.name}: group={card.groupId}, source={sourceDesc}, sprite={(cardSprite != null ? cardSprite.name : "null")}");
+
+                cardIndex++;
+            }
+
+            groupIndex++;
+        }
+
+        Debug.Log(assignmentLog.ToString());
     }
 
-    public void PickCard()
+    public void CardRevealed(Card revealedCard)
     {
-        string name = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject.name;
-        Debug.Log("Button number " + name + " was clicked");
+        if (checkingMatch || revealedCards.Contains(revealedCard))
+            return;
 
-        if (!firstGuess)
+        if (revealedCard.frontSprite == null)
         {
-            
-            firstGuess = true;
-            firstGuessIndex = int.Parse(name);
-            firstGuessCard = memoryCards[firstGuessIndex].name;
-            // setzt bild (also dreht karte um) 
-            // todo: animation einbauen
-            btns[firstGuessIndex].image.sprite = memoryCards[firstGuessIndex];
-            btns[firstGuessIndex].interactable = false;
-
+            Debug.LogWarning($"Karte {revealedCard.gameObject.name} hat kein frontSprite - Ignoriere Klick");
+            return;
         }
-        else if (!secondGuess)
+
+        revealedCard.Reveal();
+        revealedCards.Add(revealedCard);
+
+        if (currentDeck == null)
+            return;
+
+        ImageManager.DeckGroup group = currentDeck.groups.Find(g => g.groupId == revealedCard.groupId);
+        if (group != null && revealedCards.Count >= group.requiredForMatch)
         {
-            secondGuess = true;
-            secondGuessIndex = int.Parse(name);
-            secondGuessCard = memoryCards[secondGuessIndex].name;
-            // setzt bild (also dreht karte um)
-            btns[secondGuessIndex].image.sprite = memoryCards[secondGuessIndex];
-            btns[secondGuessIndex].interactable = false;
-            countGuesses++; 
             StartCoroutine(CheckForMatch());
-
-            if (firstGuessCard == secondGuessCard)
-            {
-                Debug.Log("Found a match");
-            }
-            else
-            {
-                Debug.Log("Cards don't match");
-            }
         }
     }
 
     IEnumerator CheckForMatch()
     {
-        yield return new WaitForSeconds(1f);
-        if (firstGuessCard == secondGuessCard)
-        {
-            yield return new WaitForSeconds (.5f);
-            btns[firstGuessIndex].interactable = false;
-            btns[secondGuessIndex].interactable =false;
-            btns[firstGuessIndex].image.color = new Color (0,0,0,0);
-            btns[secondGuessIndex].image.color = new Color(0, 0, 0, 0);
-            if (pair_of > 2) {
-                foreach (var btn in btns)
-                {
-                    Debug.Log("btn: " + btn + " bild des buttons: " + btn.image.name);
-                    Debug.Log("zu vergleichendes bild:" + btns[firstGuessIndex].image.name);
-                    if (btn.image.name == btns[firstGuessIndex].image.name)
-                    //TODO: id einführen
-                    {
-                        Debug.Log("image matcht");
-                        //index: int index = employeeList.FindIndex(employee => employee.LastName.Equals(somename, StringComparison.Ordinal));
-                       //btns[indexOf(btn)] btn.interactable = false;
-                       // btn.image.color = new Color(0, 0, 0, 0);
-                        //btns[int.Parse(btn)].interactable = false;
-                        //btns[firstGuessIndex].image.color = new Color(0, 0, 0, 0);
-                    }
-                }
-                //find all cards with same image
-                //and set color to 0 and make uninteractable
-                //RemoveMatchingCards(btns, btns[firstGuessIndex].image.sprite);
+        checkingMatch = true;
+        yield return new WaitForSeconds(0.5f);
 
+        string groupId = revealedCards[0].groupId;
+        bool allSameGroup = revealedCards.All(c => c.groupId == groupId);
+
+        ImageManager.DeckGroup group = currentDeck.groups.Find(g => g.groupId == groupId);
+
+        if (allSameGroup && group != null && revealedCards.Count >= group.requiredForMatch)
+        {
+            Debug.Log($"Match gefunden für Gruppe {group.groupName}!");
+
+            foreach (Card card in cards.Where(c => c.groupId == groupId))
+            {
+                card.MarkAsMatched();
             }
 
+            matchesFound++;
 
-            CheckIfGameOver();
+            if (matchesFound >= totalMatches)
+            {
+                OnGameOver();
+            }
         }
         else
         {
-            btns[firstGuessIndex].image.sprite = backImage;
-            btns[secondGuessIndex].image.sprite = backImage;
-            btns[firstGuessIndex].interactable = true; 
-            btns[secondGuessIndex].interactable = true;
+            string revealedNames = string.Join(", ", revealedCards.Select(c => c.gameObject.name));
+            Debug.Log($"Match result: FAIL. Revealed: {revealedNames}");
+
+            yield return new WaitForSeconds(0.5f);
+            foreach (Card card in revealedCards)
+            {
+                card.Hide();
+            }
         }
-        yield return new WaitForSeconds(.5f);
-        firstGuess = secondGuess = false;
+
+        revealedCards.Clear();
+        checkingMatch = false;
     }
 
-    void CheckIfGameOver()
+    void OnGameOver()
     {
-        countCorrectGuesses++;
-        if(countCorrectGuesses == gameGuesses)
+        Debug.Log("Spiel vorbei!");
+        if (gameOverPanel != null)
         {
-            Debug.Log("Game Over");
-            Debug.Log("guesses:" + countGuesses);
+            gameOverPanel.SetActive(true);
         }
     }
 
-    void Shuffle(List<Sprite> list)
+    void ShuffleCards()
     {
-        for (int i = 0; i < list.Count; i++)
+        for (int i = cards.Count - 1; i > 0; i--)
         {
-            Sprite temp = list[i];
-            int randomIndex = Random.Range(i, list.Count);
-            list[i] = list[randomIndex];
-            list[randomIndex] = temp;
+            int randomIndex = Random.Range(0, i + 1);
+            Card temp = cards[i];
+            cards[i] = cards[randomIndex];
+            cards[randomIndex] = temp;
         }
-
     }
 
-    //void RemoveMatchingCards(List<Button> btns, Sprite img)
-    //{
-    //    Debug.Log("in remove matching cards");
-    //    Debug.Log("übergebnes bild:"+img);
+    void LogCurrentDeck()
+    {
+        if (currentDeck == null)
+        {
+            Debug.Log("Kein Deck ist derzeit aktiviert.");
+            return;
+        }
 
+        StringBuilder sb = new StringBuilder();
+        sb.AppendLine($"Aktuelles Deck: {currentDeck.deckId} - {currentDeck.deckName}");
+        
+        foreach (var group in currentDeck.groups)
+        {
+            sb.AppendLine($"\tGruppe {group.groupId}: {group.groupSize} Karten, {group.requiredForMatch} für Match");
+        }
 
-    //    foreach (var btn in btns)
-    //    {
-    //        Debug.Log("btn: "+btn+" bild des buttons: "+btn.image.sprite);
+        Debug.Log(sb.ToString());
+    }
 
-    //        if (btn.image.sprite == img)
-    //        {
-    //            Debug.Log("image matcht");
-    //            //index: int index = employeeList.FindIndex(employee => employee.LastName.Equals(somename, StringComparison.Ordinal));
-    //            btn.interactable = false;
-    //            btn.image.color = new Color(0, 0, 0, 0);
-    //            //btns[int.Parse(btn)].interactable = false;
-    //            //btns[firstGuessIndex].image.color = new Color(0, 0, 0, 0);
-    //        }
-    //    }
-    //}
+    public void Restart()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    public void Quit()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#endif
+        Application.Quit();
+    }
+
+    public void ToMainMenu()
+    {
+        SceneManager.LoadScene("MainMenu");
+    }
+
+    [ContextMenu("Clear All Saved Decks (PlayerPrefs)")]
+    void ClearSavedDecks()
+    {
+        PlayerPrefs.DeleteKey("IMAGE_POOL");
+        PlayerPrefs.DeleteKey("MEMORY_DECKS");
+        PlayerPrefs.Save();
+        Debug.Log("Alle gespeicherten Decks wurden gelöscht. Starte Szene neu.");
+    }
 }
 
