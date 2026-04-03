@@ -248,6 +248,7 @@ GameObject:
   - component: {fileID: 2965284257901652764}
   - component: {fileID: 878704689547872024}
   - component: {fileID: 7904806130294543402}
+  - component: {fileID: 1303055485568778761}
   m_Layer: 5
   m_Name: DeckTilePrefab
   m_TagString: Untagged
@@ -299,14 +300,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.22352943, g: 0.2627451, b: 0.30588236, a: 0.98039216}
+  m_Color: {r: 0.1764706, g: 0.21176472, b: 0.24705884, a: 0.98039216}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
+  m_Sprite: {fileID: 0}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -376,6 +377,20 @@ MonoBehaviour:
   m_FlexibleWidth: 1
   m_FlexibleHeight: 1
   m_LayoutPriority: 1
+--- !u!114 &1303055485568778761
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2156198087238655020}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: adb30198aa32dd140b5750692dd48104, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  radius: 24
+  image: {fileID: 7066571057669789732}
 --- !u!1 &3762785982960340050
 GameObject:
   m_ObjectHideFlags: 0
@@ -443,8 +458,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "L\xF6schen"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 2e68131659cc32549be313d35847c432, type: 2}
-  m_sharedMaterial: {fileID: 95417444524112022, guid: 2e68131659cc32549be313d35847c432, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 35835683e7700f14fa274085eb6cabe3, type: 2}
+  m_sharedMaterial: {fileID: 1760931512485437957, guid: 35835683e7700f14fa274085eb6cabe3, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -468,7 +483,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 30
+  m_fontSize: 26.15
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -579,8 +594,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "als aktives Deck ausw\xE4hlen"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 2e68131659cc32549be313d35847c432, type: 2}
-  m_sharedMaterial: {fileID: 95417444524112022, guid: 2e68131659cc32549be313d35847c432, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 35835683e7700f14fa274085eb6cabe3, type: 2}
+  m_sharedMaterial: {fileID: 1760931512485437957, guid: 35835683e7700f14fa274085eb6cabe3, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -604,7 +619,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 40
+  m_fontSize: 34.9
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -706,14 +721,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.1764706, g: 0.21176472, b: 0.24705884, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10901, guid: 0000000000000000f000000000000000, type: 0}
+  m_Sprite: {fileID: 21300000, guid: a1b36335edc21804d8483d19058e387c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -736,6 +751,7 @@ GameObject:
   - component: {fileID: 3862129073520931147}
   - component: {fileID: 384202691823100995}
   - component: {fileID: 8824463922980227843}
+  - component: {fileID: 5752509921913075239}
   m_Layer: 5
   m_Name: DeleteButton
   m_TagString: Untagged
@@ -791,7 +807,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+  m_Sprite: {fileID: 0}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -865,6 +881,20 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!114 &5752509921913075239
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6614603808434872167}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: adb30198aa32dd140b5750692dd48104, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  radius: 8
+  image: {fileID: 3862129073520931147}
 --- !u!1 &7690721023835784483
 GameObject:
   m_ObjectHideFlags: 0
@@ -933,8 +963,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 2e68131659cc32549be313d35847c432, type: 2}
-  m_sharedMaterial: {fileID: 95417444524112022, guid: 2e68131659cc32549be313d35847c432, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 35835683e7700f14fa274085eb6cabe3, type: 2}
+  m_sharedMaterial: {fileID: 1760931512485437957, guid: 35835683e7700f14fa274085eb6cabe3, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1091,8 +1121,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 2e68131659cc32549be313d35847c432, type: 2}
-  m_sharedMaterial: {fileID: 2100000, guid: 7c832a1c991e9614e9029d740a24d11a, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 35835683e7700f14fa274085eb6cabe3, type: 2}
+  m_sharedMaterial: {fileID: 1760931512485437957, guid: 35835683e7700f14fa274085eb6cabe3, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

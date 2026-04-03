@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.nobi.roundedcorners": {
+      "version": "https://github.com/kirevdokimov/Unity-UI-Rounded-Corners.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "33135342e868201eb0d4cef821ecab90caca373e"
+    },
     "com.unity.2d.animation": {
       "version": "11.0.0",
       "depth": 0,
@@ -280,6 +287,13 @@
         "com.unity.modules.jsonserialize": "1.0.0"
       },
       "url": "https://packages.unity.com"
+    },
+    "com.wehlney.percentile-ui-layout": {
+      "version": "https://github.com/Wehlney/percentile-unity-ui-layout.git#v0.1.2",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "32bd3c6b9d9b3320816c9b8a12c7c60a95c41b3b"
     },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",

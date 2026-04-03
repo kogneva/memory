@@ -66,6 +66,7 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\EnvMapAnimator.cs" />
     <Compile Include="Assets\Scripts\StartMenuController.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextSelector_A.cs" />
+    <Compile Include="Assets\Space_Exploration_GUI_Kit\Scripts\Toggle.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark02.cs" />
     <Compile Include="Assets\Scripts\Timer.cs" />
     <Compile Include="Assets\Scripts\DeckManagerUI.cs" />
@@ -96,6 +97,7 @@
     <Compile Include="Assets\Scripts\Card.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\CameraController.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark03.cs" />
+    <Compile Include="Assets\Space_Exploration_GUI_Kit\Scripts\Scene_Controller.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\DropdownSample.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexColorCycler.cs" />
     <Compile Include="Assets\Scripts\DeckBuilderUI.cs" />
@@ -114,15 +116,14 @@
     <None Include="Assets\TextMesh Pro\Examples &amp; Extras\Fonts\Roboto-Bold - License.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile-2-Pass.shader" />
     <None Include="Assets\TextMesh Pro\Examples &amp; Extras\Fonts\Unity - OFL.txt" />
-    <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap.shader" />
     <None Include="Assets\TextMesh Pro\Examples &amp; Extras\Fonts\Oswald-Bold - OFL.txt" />
     <None Include="Assets\TextMesh Pro\Examples &amp; Extras\Fonts\Roboto-Bold - AFL.txt" />
     <None Include="Assets\TextMesh Pro\Examples &amp; Extras\Fonts\Anton OFL.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Mobile.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF SSD.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Surface-Mobile.shader" />
-    <None Include="Assets\Nytrock\Global Nytrock Font\AllSymbols.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\SDFFunctions.hlsl" />
+    <None Include="Assets\Space_Exploration_GUI_Kit\Fonts\README.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Surface.shader" />
     <None Include="Assets\TextMesh Pro\Sprites\EmojiOne Attribution.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap-Custom-Atlas.shader" />
@@ -132,6 +133,7 @@
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Properties.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Surface.cginc" />
     <None Include="Assets\TextMesh Pro\Resources\LineBreaking Following Characters.txt" />
+    <None Include="Assets\Space_Exploration_GUI_Kit\Fonts\OFL.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Masking.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF Overlay.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap-Mobile.shader" />
@@ -1233,12 +1235,20 @@
       <HintPath>Library\ScriptAssemblies\Unity.InternalAPIEditorBridge.001.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Wehlney.PercentileUILayout.Editor">
+      <HintPath>Library\ScriptAssemblies\Wehlney.PercentileUILayout.Editor.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Unity.2D.Animation.Editor">
       <HintPath>Library\ScriptAssemblies\Unity.2D.Animation.Editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.Collections">
       <HintPath>Library\ScriptAssemblies\Unity.Collections.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Nobi.UiRoundedCorners.Editor">
+      <HintPath>Library\ScriptAssemblies\Nobi.UiRoundedCorners.Editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="PPv2URPConverters">
@@ -1309,6 +1319,10 @@
       <HintPath>Library\ScriptAssemblies\Unity.TextMeshPro.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Wehlney.PercentileUILayout.Runtime">
+      <HintPath>Library\ScriptAssemblies\Wehlney.PercentileUILayout.Runtime.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Unity.2D.Tilemap.Extras">
       <HintPath>Library\ScriptAssemblies\Unity.2D.Tilemap.Extras.dll</HintPath>
       <Private>False</Private>
@@ -1331,6 +1345,10 @@
     </Reference>
     <Reference Include="Unity.RenderPipelines.Core.Editor">
       <HintPath>Library\ScriptAssemblies\Unity.RenderPipelines.Core.Editor.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Nobi.UiRoundedCorners">
+      <HintPath>Library\ScriptAssemblies\Nobi.UiRoundedCorners.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.RenderPipelines.Universal.Runtime">
