@@ -37,7 +37,7 @@ public class GameController : MonoBehaviour
     [Header("Auto Deck Generation")]
     [Tooltip("Anzahl der Gruppen/Paare")]
     [SerializeField]
-    private int defaultGroupCount = 4;
+    private int defaultGroupCount = 6;
 
     [Tooltip("Anzahl der Karten pro Gruppe (z.B. 2 für klassische Paare, 4 für Vierer-Gruppen)")]
     [SerializeField]
