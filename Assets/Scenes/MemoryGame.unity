@@ -160,7 +160,7 @@ Material:
     - _WidthHeightRadius: {r: 1920.0001, g: 213.84003, b: 48, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
---- !u!21 &497853312
+--- !u!21 &449555676
 Material:
   serializedVersion: 8
   m_ObjectHideFlags: 0
@@ -436,7 +436,6 @@ RectTransform:
   - {fileID: 2009574064}
   - {fileID: 1592388895}
   - {fileID: 1110308172}
-  - {fileID: 725315206}
   - {fileID: 890391755}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -524,51 +523,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &725315205
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 725315206}
-  - component: {fileID: 725315207}
-  m_Layer: 0
-  m_Name: Timer
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &725315206
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 725315205}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -23.619276, y: -15.311292, z: -5957.4434}
-  m_LocalScale: {x: 66.19382, y: 66.19382, z: 66.19382}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 674728030}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &725315207
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 725315205}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4d774407ec1155144a2a0a4c548e6829, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  timer: 0
 --- !u!1 &728360984
 GameObject:
   m_ObjectHideFlags: 0
@@ -1153,7 +1107,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 497853312}
+  m_Material: {fileID: 449555676}
   m_Color: {r: 0.22352943, g: 0.2627451, b: 0.30588236, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -1860,6 +1814,8 @@ GameObject:
   - component: {fileID: 1712785698}
   - component: {fileID: 1712785697}
   - component: {fileID: 1712785699}
+  - component: {fileID: 1712785700}
+  - component: {fileID: 1712785701}
   m_Layer: 0
   m_Name: Game Controller
   m_TagString: Untagged
@@ -1911,6 +1867,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3fbcd7f9a91b8994b8bf107d3bd54897, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  timer: {fileID: 1712785700}
+  analytics: {fileID: 1712785701}
   backSprite: {fileID: 8199295699639866881, guid: a4c185b2dce463441b50db69f82e665c, type: 3}
   gameOverPanel: {fileID: 890391754}
   deckSelectionPanel: {fileID: 0}
@@ -1920,6 +1878,31 @@ MonoBehaviour:
   defaultGroupCount: 6
   defaultGroupSize: 2
   defaultRequiredForMatch: 2
+--- !u!114 &1712785700
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1712785696}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d774407ec1155144a2a0a4c548e6829, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Timer
+  timer: 0
+--- !u!114 &1712785701
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1712785696}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a88a87aea1ecde04db4d0d8f4fcf413b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameAnalytics
 --- !u!1 &1788127106
 GameObject:
   m_ObjectHideFlags: 0

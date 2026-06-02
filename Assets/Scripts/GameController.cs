@@ -13,6 +13,11 @@ public class GameController : MonoBehaviour
     public static GameController Instance { get; private set; }
 
     [SerializeField]
+    public Timer timer;
+
+    [SerializeField]
+    public GameAnalytics analytics;
+
     [Tooltip("Sprite für die Kartenrückseite")]
     public Sprite backSprite;
 
@@ -235,6 +240,7 @@ public class GameController : MonoBehaviour
 
         SetupCardImages();
         CalculateTotalMatches();
+        timer.StartTimer();
     }
 
     void CalculateTotalMatches()
@@ -367,6 +373,8 @@ public class GameController : MonoBehaviour
             }
 
             matchesFound++;
+            analytics.CorrectGuesses++;
+            Debug.Log("correctGuesses:" + analytics.CorrectGuesses);
 
             if (matchesFound >= totalMatches)
             {
@@ -383,6 +391,9 @@ public class GameController : MonoBehaviour
             {
                 card.Hide();
             }
+
+            analytics.IncorrectGuesses++;
+            Debug.Log("incorrectGuesses:" + analytics.IncorrectGuesses);
         }
 
         revealedCards.Clear();
@@ -392,6 +403,7 @@ public class GameController : MonoBehaviour
     void OnGameOver()
     {
         Debug.Log("Spiel vorbei!");
+        timer.StopTimer();
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(true);
