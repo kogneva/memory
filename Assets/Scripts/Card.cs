@@ -6,7 +6,7 @@ public class Card : MonoBehaviour
     [Header("Card Info")]
     public string groupId; 
     public Sprite frontSprite;
-    
+    public string imageId;
     private Image imageComponent;
     private Button buttonComponent;
     private bool isRevealed;
