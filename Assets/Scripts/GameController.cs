@@ -103,6 +103,7 @@ public class GameController : MonoBehaviour
         if (selectedDeck != null)
         {
             Debug.Log($"Starte mit ausgewähltem Deck: {selectedDeck.deckName}");
+            Debug.Log($"Deck-Details: {JsonUtility.ToJson(selectedDeck, true)}");
             InitializeGame(selectedDeck.deckId);
         }
         else if (ImageManager.Instance.memoryDecks?.Count > 0)

@@ -22,7 +22,7 @@ public class RoundAnalyticsData
     public int groupCount;
     public int groupSize;
     public int requiredForMatch;
-    public bool useSameImage;
+    public bool useSameImages;
     //round info
     public string timestamp;
     public float timeTakenSeconds;
@@ -56,6 +56,7 @@ public class GameAnalytics : MonoBehaviour
         roundData.groupCount = currentDeck.groups.Count;
         roundData.groupSize = currentDeck.groupSize;
         roundData.requiredForMatch = currentDeck.requiredForMatch;
+        roundData.useSameImages = currentDeck.useSameImages;
     }
 
     public void RecordIncorrectGuessForCard(string imageId)
@@ -81,7 +82,7 @@ public class GameAnalytics : MonoBehaviour
             groupCount = roundData.groupCount,
             groupSize = roundData.groupSize,
             requiredForMatch = roundData.requiredForMatch,
-            useSameImage = roundData.useSameImage,
+            useSameImages = roundData.useSameImages,
 
             ////round info
             timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss"),
