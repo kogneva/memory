@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -8,7 +9,23 @@ using UnityEngine.Serialization;
 public class CardAnalytics
 {
     public string imageId;
+    public string groupId;
     [FormerlySerializedAs("incorrectGuesses")] public int incorrectKlick;
+}
+
+// Neue Klassen für die Gruppierung in der JSON-Ausgabe
+[Serializable]
+public class GroupedCardAnalytics
+{
+    public string GroupId;
+    public List<CardKlicks> Cards;
+}
+
+[Serializable]
+public class CardKlicks
+{
+    public string imageId;
+    public int incorrectKlick;
 }
 
 // this is how the JSON will look like
@@ -16,7 +33,6 @@ public class CardAnalytics
 public class RoundAnalyticsData
 {
     //deck info
-
     public string deckId;
     public string deckName;
     public int groupCount;
@@ -27,17 +43,17 @@ public class RoundAnalyticsData
     public string timestamp;
     public float timeTakenSeconds;
     public bool gameFinished;
-    public int incorrectGuessesByGroup;
-    public List<CardAnalytics> incorrectKlicksByCard;
+    [FormerlySerializedAs("incorrectGuessesByGroup")] public int incorrectMatchTries;
+    public List<GroupedCardAnalytics> incorrectKlicksByCard;
 }
 
 public class GameAnalytics : MonoBehaviour
-{  
+{
     // game info
     public bool GameFinished = false;
     [HideInInspector]
     public string currentDeckId;
-    
+
     // general guesses
     [FormerlySerializedAs("TotalGuesses")] public int TotalPossibleCorrectGuesses = 0;
     public int IncorrectMatchGuesses = 0;
@@ -59,14 +75,14 @@ public class GameAnalytics : MonoBehaviour
         roundData.useSameImages = currentDeck.useSameImages;
     }
 
-    public void RecordIncorrectGuessForCard(string imageId)
+    public void RecordIncorrectGuessForCard(string imageId, string groupId)
     {
         if (string.IsNullOrEmpty(imageId)) return;
 
         var stat = cardStats.Find(c => c.imageId == imageId);
         if (stat == null)
         {
-            stat = new CardAnalytics { imageId = imageId, incorrectKlick = 0 };
+            stat = new CardAnalytics { imageId = imageId, groupId = groupId, incorrectKlick = 0 };
             cardStats.Add(stat);
         }
         stat.incorrectKlick++;
@@ -78,7 +94,7 @@ public class GameAnalytics : MonoBehaviour
         {
             ////deck info
             deckId = currentDeckId,
-            deckName = roundData.deckName, 
+            deckName = roundData.deckName,
             groupCount = roundData.groupCount,
             groupSize = roundData.groupSize,
             requiredForMatch = roundData.requiredForMatch,
@@ -88,8 +104,19 @@ public class GameAnalytics : MonoBehaviour
             timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss"),
             timeTakenSeconds = finalTime,
             gameFinished = GameFinished,
-            incorrectGuessesByGroup = IncorrectMatchGuesses,
-            incorrectKlicksByCard = this.cardStats
+            incorrectMatchTries = IncorrectMatchGuesses,
+
+            // Anpassung: Erstellung echter serialisierbaren Klassen anstatt anonymer Objekte, mit .ToList()
+            incorrectKlicksByCard = this.cardStats.GroupBy(p => p.groupId)
+                .Select(g => new GroupedCardAnalytics
+                {
+                    GroupId = g.Key,
+                    Cards = g.Select(p => new CardKlicks
+                    {
+                        imageId = p.imageId,
+                        incorrectKlick = p.incorrectKlick
+                    }).ToList()
+                }).ToList()
         };
 
         string json = JsonUtility.ToJson(data, true);

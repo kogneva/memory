@@ -424,8 +424,8 @@ public class GameController : MonoBehaviour
             foreach (Card card in revealedCards)
             {
                 // Analytics für die einzelne Karte erfassen
-                analytics.RecordIncorrectGuessForCard(card.imageId);
-                Debug.Log($"Versteckte Karte {card.imageId}");
+                analytics.RecordIncorrectGuessForCard(card.imageId, card.groupId);
+                Debug.Log($"Versteckte Karte id: {card.imageId}, groupId: {card.groupId}");
 
                 card.Hide();
             }
