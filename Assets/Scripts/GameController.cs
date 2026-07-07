@@ -75,7 +75,7 @@ public class GameController : MonoBehaviour
 
         if (backSprite == null)
         {
-            backSprite = Resources.Load<Sprite>("Sprites/photo_5389104988137058662_y");
+            backSprite = Resources.Load<Sprite>("Sprites/pixil-frame-0.png");
             if (backSprite == null)
             {
                 Debug.LogWarning("Couldn't load default BackSprite");

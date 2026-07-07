@@ -110,7 +110,7 @@ public class ImageManager : MonoBehaviour
     private const string PLAYERPREFS_POOL_KEY = "IMAGE_POOL";
     private const string PLAYERPREFS_DECKS_KEY = "MEMORY_DECKS";
 
-    private const string DEFAULT_RESOURCE_FOLDER = "Sprites/diamond-pearl";
+    private const string DEFAULT_RESOURCE_FOLDER = "Sprites/Sprites 1.0 & 1.1";
     private List<Sprite> defaultSprites = new List<Sprite>();
     
     private const int MAX_DEFAULT_IMAGES_TO_LOAD = 50;
