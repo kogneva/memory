@@ -110,10 +110,10 @@ public class ImageManager : MonoBehaviour
     private const string PLAYERPREFS_POOL_KEY = "IMAGE_POOL";
     private const string PLAYERPREFS_DECKS_KEY = "MEMORY_DECKS";
 
-    private const string DEFAULT_RESOURCE_FOLDER = "Sprites/diamond-pearl";
+    private const string DEFAULT_RESOURCE_FOLDER = "Sprites/Sprites 1.0 & 1.1";
     private List<Sprite> defaultSprites = new List<Sprite>();
     
-    private const int MAX_DEFAULT_IMAGES_TO_LOAD = 40;
+    private const int MAX_DEFAULT_IMAGES_TO_LOAD = 50;
     private const string PLAYERPREFS_SELECTED_DECK = "SELECTED_DECK_ID";
         
     void Awake()
@@ -401,9 +401,20 @@ public class ImageManager : MonoBehaviour
             Texture2D texture = new Texture2D(2, 2, TextureFormat.RGB24, false);
             texture.LoadImage(data);
 
+            // ==========================================
+            // CROP: Quadratischer Zuschnitt in der Mitte
+            // ==========================================
+            
+            // Bestimme die kürzere Seite, um das Quadrat zu definieren
+            int size = Mathf.Min(texture.width, texture.height);
+            
+            // Berechne den zentrierten Startpunkt (x, y)
+            int x = (texture.width - size) / 2;
+            int y = (texture.height - size) / 2;
+
             return Sprite.Create(
                 texture,
-                new Rect(0, 0, texture.width, texture.height),
+                new Rect(x, y, size, size),
                 new Vector2(0.5f, 0.5f)
             );
         }
@@ -455,19 +466,21 @@ public class ImageManager : MonoBehaviour
         }
     }
 
-    // ============== DECK-ERSTELLUNG ==============
+    // ============== DECK-CREATION ==============
 
     public DeckValidationResult ValidateSimplifiedDeck(SimplifiedDeckConfig config)
     {
-        if (config.groupCount < 2)
-            return new DeckValidationResult(false, "Mindestens 2 Gruppen erforderlich");
-
-        if (config.groupSize < 2)
-            return new DeckValidationResult(false, "Mindestens 2 Karten pro Gruppe erforderlich");
-
+        // validation of deck configuration parameters
+        // how many groups
+        if (config.groupCount < 2 || config.groupCount > 50)
+            return new DeckValidationResult(false, "Die Gruppengröße muss zwischen 2 und 50 liegen");
+        // how many cards per group
+        if (config.groupSize < 2 || config.groupSize > 5)
+            return new DeckValidationResult(false, "Gruppengröße muss zwischen 2 und 5 liegen");
+        // how many cards per group need to be found by player to count as a match
         if (config.requiredForMatch < 2 || config.requiredForMatch > config.groupSize)
             return new DeckValidationResult(false, 
-                $"requiredForMatch ({config.requiredForMatch}) muss zwischen 2 und groupSize ({config.groupSize}) liegen");
+                $"requiredForMatch ({config.requiredForMatch}) muss zwischen 2 und Gruppengröße = ({config.groupSize}) liegen");
 
         int requiredImages = config.TotalRequiredImages;
         int availableImages = imagePool?.Count ?? 0;

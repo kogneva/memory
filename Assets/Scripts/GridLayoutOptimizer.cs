@@ -30,6 +30,10 @@ public class GridLayoutOptimizer : MonoBehaviour
     [Tooltip("Abstand zwischen den Karten")]
     public Vector2 spacing = new Vector2(10f, 10f);
 
+    [Header("Dynamic Layout")]
+    [Tooltip("Optional: Ein UI-Element (z.B. ein Verlassen-Button), unter dem das Grid beginnen soll.")]
+    public RectTransform avoidTopElement;
+
     private RectOffset padding;
 
     void Awake()
@@ -77,8 +81,16 @@ public class GridLayoutOptimizer : MonoBehaviour
         if (childCount == 0)
             return;
 
-        // Padding aus Inspector-Werten aktualisieren
-        padding = new RectOffset(paddingLeft, paddingRight, paddingTop, paddingBottom);
+        // Dynamisches Top-Padding berechnen
+        int dynamicPaddingTop = paddingTop;
+        if (avoidTopElement != null && avoidTopElement.gameObject.activeInHierarchy)
+        {
+            // Höhe des UI-Elements plus einen kleinen Basis-Abstand zusammenrechnen
+            dynamicPaddingTop += Mathf.CeilToInt(avoidTopElement.rect.height) + 10; // 10 ist der Basis-Abstand
+        }
+
+        // Padding aktualisieren
+        padding = new RectOffset(paddingLeft, paddingRight, dynamicPaddingTop, paddingBottom);
 
         // Padding anwenden
         gridLayout.padding = padding;
@@ -106,8 +118,10 @@ public class GridLayoutOptimizer : MonoBehaviour
     private Vector2 GetAvailableSize()
     {
         Rect rect = rectTransform.rect;
-        float availableWidth = rect.width - paddingLeft - paddingRight;
-        float availableHeight = rect.height - paddingTop - paddingBottom;
+
+        // Nutze hier das fertig berechnete padding.top/bottom/left/right Objekt (inkl. dynamischer Button-Höhe)
+        float availableWidth = rect.width - padding.left - padding.right;
+        float availableHeight = rect.height - padding.top - padding.bottom;
 
         return new Vector2(
             Mathf.Max(availableWidth, 100f),

@@ -57,7 +57,7 @@ public class DeckBuilderUI : MonoBehaviour
             Debug.LogError("ImageManager.Instance ist null! Bitte stelle sicher, dass ImageManager in der Szene existiert.");
         }
 
-        if (groupCountInput != null) groupCountInput.text = "5";
+        if (groupCountInput != null) groupCountInput.text = "6";
         if (groupSizeInput != null) groupSizeInput.text = "2";
         if (requiredForMatchInput != null) requiredForMatchInput.text = "2";
 

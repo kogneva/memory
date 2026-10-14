@@ -13,6 +13,11 @@ public class GameController : MonoBehaviour
     public static GameController Instance { get; private set; }
 
     [SerializeField]
+    public Timer timer;
+
+    [SerializeField]
+    public GameAnalytics analytics;
+
     [Tooltip("Sprite für die Kartenrückseite")]
     public Sprite backSprite;
 
@@ -37,7 +42,7 @@ public class GameController : MonoBehaviour
     [Header("Auto Deck Generation")]
     [Tooltip("Anzahl der Gruppen/Paare")]
     [SerializeField]
-    private int defaultGroupCount = 4;
+    private int defaultGroupCount = 6;
 
     [Tooltip("Anzahl der Karten pro Gruppe (z.B. 2 für klassische Paare, 4 für Vierer-Gruppen)")]
     [SerializeField]
@@ -70,7 +75,7 @@ public class GameController : MonoBehaviour
 
         if (backSprite == null)
         {
-            backSprite = Resources.Load<Sprite>("Sprites/photo_5389104988137058662_y");
+            backSprite = Resources.Load<Sprite>("Sprites/pixil-frame-0.png");
             if (backSprite == null)
             {
                 Debug.LogWarning("Couldn't load default BackSprite");
@@ -98,6 +103,7 @@ public class GameController : MonoBehaviour
         if (selectedDeck != null)
         {
             Debug.Log($"Starte mit ausgewähltem Deck: {selectedDeck.deckName}");
+            Debug.Log($"Deck-Details: {JsonUtility.ToJson(selectedDeck, true)}");
             InitializeGame(selectedDeck.deckId);
         }
         else if (ImageManager.Instance.memoryDecks?.Count > 0)
@@ -217,7 +223,7 @@ public class GameController : MonoBehaviour
     {
         ImageManager imageManager = ImageManager.Instance;
         currentDeck = imageManager.GetDeck(deckId);
-
+        Debug.Log($"currentDeck: {JsonUtility.ToJson(currentDeck, true)}");
         if (currentDeck == null)
         {
             Debug.LogError($"Deck mit ID {deckId} nicht gefunden");
@@ -233,13 +239,18 @@ public class GameController : MonoBehaviour
         revealedCards.Clear();
         checkingMatch = false;
 
+        // Analytics zurücksetzen
+        analytics.StartAnalytics(currentDeck);
+
         SetupCardImages();
         CalculateTotalMatches();
+        timer.StartTimer();
     }
 
     void CalculateTotalMatches()
     {
         totalMatches = currentDeck.groups.Count;
+        analytics.TotalPossibleCorrectGuesses = totalMatches;
     }
 
     void SetupCardImages()
@@ -292,14 +303,16 @@ public class GameController : MonoBehaviour
                 string sourceDesc = "";
 
                 string imageId = currentDeck.GetImageIdForCard(deckGroup, i);
-                
+
                 if (!string.IsNullOrEmpty(imageId))
                 {
+                    card.imageId = imageId;
                     cardSprite = imageManager.LoadPoolImageSprite(imageId);
                     sourceDesc = $"pool:{imageId}";
 
                     if (cardSprite == null)
                     {
+                        card.imageId = null;
                         Debug.LogWarning($"Sprite für Bild {imageId} konnte nicht geladen werden - verwende Default");
                         cardSprite = imageManager?.GetDefaultSpriteById(groupIndex);
                         sourceDesc += ", fallback";
@@ -307,6 +320,7 @@ public class GameController : MonoBehaviour
                 }
                 else
                 {
+                    card.imageId = null;
                     cardSprite = imageManager?.GetDefaultSpriteById(groupIndex);
                     sourceDesc = $"group-default(groupIndex {groupIndex})";
                 }
@@ -341,27 +355,50 @@ public class GameController : MonoBehaviour
             return;
 
         ImageManager.DeckGroup group = currentDeck.groups.Find(g => g.groupId == revealedCard.groupId);
-        if (group != null && revealedCards.Count >= group.requiredForMatch)
+        if (group != null && revealedCards.Count > 1)
         {
             StartCoroutine(CheckForMatch());
         }
     }
 
-    IEnumerator CheckForMatch()
+    private IEnumerator CheckForMatch()
     {
         checkingMatch = true;
+
         yield return new WaitForSeconds(0.5f);
 
-        string groupId = revealedCards[0].groupId;
-        bool allSameGroup = revealedCards.All(c => c.groupId == groupId);
-
-        ImageManager.DeckGroup group = currentDeck.groups.Find(g => g.groupId == groupId);
-
-        if (allSameGroup && group != null && revealedCards.Count >= group.requiredForMatch)
+        if (revealedCards.Count == 0)
         {
+            checkingMatch = false;
+            yield break;
+        }
+
+        string groupId = revealedCards[0].groupId;
+
+        ImageManager.DeckGroup group = currentDeck.groups
+            .FirstOrDefault(g => g.groupId == groupId);
+
+        bool allSameGroup = revealedCards.All(card => card.groupId == groupId);
+
+        if (allSameGroup && group != null)
+        {
+            int missingCardCount = group.requiredForMatch - revealedCards.Count;
+            bool hasMissingCards = missingCardCount > 0;
+
+            if (hasMissingCards)
+            {
+                Debug.Log(
+                    $"Match gefunden für Gruppe {group.groupName}, " +
+                    $"für die Gruppe sind noch {missingCardCount} Karten zu finden!"
+                );
+
+                checkingMatch = false;
+                yield break;
+            }
+
             Debug.Log($"Match gefunden für Gruppe {group.groupName}!");
 
-            foreach (Card card in cards.Where(c => c.groupId == groupId))
+            foreach (Card card in cards.Where(card => card.groupId == groupId))
             {
                 card.MarkAsMatched();
             }
@@ -375,14 +412,27 @@ public class GameController : MonoBehaviour
         }
         else
         {
-            string revealedNames = string.Join(", ", revealedCards.Select(c => c.gameObject.name));
+            string revealedNames = string.Join(
+                ", ",
+                revealedCards.Select(card => card.gameObject.name)
+            );
+
             Debug.Log($"Match result: FAIL. Revealed: {revealedNames}");
 
             yield return new WaitForSeconds(0.5f);
+
             foreach (Card card in revealedCards)
             {
+                // Analytics für die einzelne Karte erfassen
+                analytics.RecordIncorrectGuessForCard(card.imageId, card.groupId);
+                Debug.Log($"Versteckte Karte id: {card.imageId}, groupId: {card.groupId}");
+
                 card.Hide();
             }
+
+            analytics.IncorrectMatchGuesses++;
+
+            Debug.Log($"incorrectGuesses: {analytics.IncorrectMatchGuesses}");
         }
 
         revealedCards.Clear();
@@ -392,6 +442,10 @@ public class GameController : MonoBehaviour
     void OnGameOver()
     {
         Debug.Log("Spiel vorbei!");
+        timer.StopTimer();
+        analytics.GameFinished = true;
+        
+        analytics.SaveToJson(timer.timer); 
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(true);
