@@ -397,18 +397,21 @@ public class ImageManager : MonoBehaviour
 
         try
         {
-            byte[] data = File.ReadAllBytes(imagePath);
-            Texture2D texture = new Texture2D(2, 2, TextureFormat.RGB24, false);
-            texture.LoadImage(data);
+            Texture2D texture = NativeGallery.LoadImageAtPath(imagePath);
+            if (texture == null)
+            {
+                Debug.LogWarning($"Bild konnte nicht geladen werden: {imagePath}");
+                return null;
+            }
 
-            // ==========================================
-            // CROP: Quadratischer Zuschnitt in der Mitte
-            // ==========================================
-            
-            // Bestimme die kürzere Seite, um das Quadrat zu definieren
             int size = Mathf.Min(texture.width, texture.height);
-            
-            // Berechne den zentrierten Startpunkt (x, y)
+            if (size <= 0)
+            {
+                Destroy(texture);
+                Debug.LogWarning($"Bild hat ungültige Abmessungen: {imagePath}");
+                return null;
+            }
+
             int x = (texture.width - size) / 2;
             int y = (texture.height - size) / 2;
 
